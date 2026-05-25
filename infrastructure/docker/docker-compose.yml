@@ -1,0 +1,248 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# NarayanAstroReader — docker-compose
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Service layout (ports)
+# ───────────────────────
+#  5432  postgres          — shared PostgreSQL database
+#  6379  redis             — session store + JWT blacklist
+#  8000  api-gateway       — monolith / main FastAPI app (public)
+#  8001  dasha-engine      — Vedic Dasha calculation service
+#  8002  notification-svc  — email + push notification service
+#  8003  analytics-svc     — admin analytics service
+#
+# Usage
+# ─────
+#   docker-compose up -d                    # start all services
+#   docker-compose up api-gateway           # start only the main app
+#   docker-compose logs -f dasha-engine     # tail dasha service logs
+#   docker-compose down -v                  # stop and remove volumes
+#
+# Environment
+# ───────────
+#   Copy .env.example → .env and fill in secrets before starting.
+#   All services share the same .env file for simplicity; in production
+#   each service should have its own secrets (use Docker secrets / K8s).
+#
+# SOLID notes
+# ───────────
+#   Each service is independently buildable and deployable.
+#   Health checks prevent dependent services from starting before
+#   their dependencies are ready (replaces sleep hacks).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+# ── Shared environment anchors (DRY) ─────────────────────────────────────────
+x-common-env: &common-env
+  ENVIRONMENT:      ${ENVIRONMENT:-development}
+  LOG_LEVEL:        ${LOG_LEVEL:-INFO}
+  SERVICE_SECRET:   ${SERVICE_SECRET:-}
+
+x-db-env: &db-env
+  DATABASE_URL:     postgresql://${POSTGRES_USER:-narayan}:${POSTGRES_PASSWORD:-narayan_dev_pass}@postgres:5432/${POSTGRES_DB:-narayan_astro}
+
+x-redis-env: &redis-env
+  REDIS_URL:        redis://redis:6379/0
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  internal:
+    driver: bridge
+    internal: true      # microservices can only talk to each other internally
+  public:
+    driver: bridge      # api-gateway + public services attach here
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Infrastructure
+# ═══════════════════════════════════════════════════════════════════════════════
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-narayan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-narayan_dev_pass}
+      POSTGRES_DB:       ${POSTGRES_DB:-narayan_astro}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Run migrations on first start
+      - ../../infrastructure/db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-narayan} -d ${POSTGRES_DB:-narayan_astro}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Microservices
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  # ── Dasha Engine (port 8001) ─────────────────────────────────────────────────
+  dasha-engine:
+    build:
+      context:    ../../services/dasha-engine
+      dockerfile: Dockerfile
+    image: narayan-astro/dasha-engine:latest
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      PORT:           8001
+      PYJHORA_PATH:   ${PYJHORA_PATH:-}
+      MAX_DEPTH:      ${DASHA_MAX_DEPTH:-5}
+    ports:
+      - "8001:8001"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; httpx.get('http://localhost:8001/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Notification Service (port 8002) ─────────────────────────────────────────
+  notification-svc:
+    build:
+      context:    ../../services/notification-service
+      dockerfile: Dockerfile
+    image: narayan-astro/notification-svc:latest
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      PORT:             8002
+      EMAIL_PROVIDER:   ${EMAIL_PROVIDER:-smtp}
+      SMTP_HOST:        ${SMTP_HOST:-${EMAIL_HOST:-}}
+      SMTP_PORT:        ${SMTP_PORT:-${EMAIL_PORT:-587}}
+      SMTP_USER:        ${SMTP_USER:-${EMAIL_USER:-}}
+      SMTP_PASSWORD:    ${SMTP_PASSWORD:-${EMAIL_PASSWORD:-}}
+      EMAIL_FROM_NAME:  ${EMAIL_FROM_NAME:-NarayanAstroReader}
+      APP_BASE_URL:     ${APP_BASE_URL:-http://localhost:8000}
+      AWS_REGION:       ${AWS_REGION:-ap-south-1}
+      FCM_SERVER_KEY:   ${FCM_SERVER_KEY:-}
+    ports:
+      - "8002:8002"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; httpx.get('http://localhost:8002/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Analytics Service (port 8003) ────────────────────────────────────────────
+  analytics-svc:
+    build:
+      context:    ../../services/analytics-service
+      dockerfile: Dockerfile
+    image: narayan-astro/analytics-svc:latest
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      <<: *db-env
+      PORT:          8003
+      ADMIN_SECRET:  ${ADMIN_SECRET:-${ADMIN_PASSWORD:-}}
+    ports:
+      - "8003:8003"
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; httpx.get('http://localhost:8003/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Main application (monolith / API gateway)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  api-gateway:
+    build:
+      context:    ../../
+      dockerfile: Dockerfile
+    image: narayan-astro/api-gateway:latest
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      <<: *db-env
+      <<: *redis-env
+      PORT:                 8000
+      ANTHROPIC_API_KEY:    ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL:      ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      JWT_SECRET:           ${JWT_SECRET:-}
+      ADMIN_USERNAME:       ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD:       ${ADMIN_PASSWORD:-}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-}
+      ALLOWED_ORIGINS:      ${ALLOWED_ORIGINS:-*}
+      # Microservice URLs (resolved via Docker network)
+      USE_MICROSERVICES:    ${USE_MICROSERVICES:-true}
+      DASHA_ENGINE_URL:     http://dasha-engine:8001
+      NOTIFICATION_URL:     http://notification-svc:8002
+      ANALYTICS_URL:        http://analytics-svc:8003
+      # Email (keep for local fallback mode)
+      EMAIL_HOST:           ${EMAIL_HOST:-}
+      EMAIL_PORT:           ${EMAIL_PORT:-587}
+      EMAIL_USER:           ${EMAIL_USER:-}
+      EMAIL_PASSWORD:       ${EMAIL_PASSWORD:-}
+      APP_BASE_URL:         ${APP_BASE_URL:-http://localhost:8000}
+      PYJHORA_PATH:         ${PYJHORA_PATH:-}
+    ports:
+      - "8000:8000"
+    networks:
+      - internal
+      - public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      dasha-engine:
+        condition: service_healthy
+      notification-svc:
+        condition: service_healthy
+      analytics-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

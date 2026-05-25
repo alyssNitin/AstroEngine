@@ -1,0 +1,2118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NarayanAstroReader — Vedic AI Astrologer</title>
+<style>
+:root{
+  --saffron:#E8610A;--deep:#5B3DC8;--gold:#C5870A;
+  --bg:#FDF6EC;--card:#FFFFFF;--card2:#FFF8F0;
+  --text:#1E1B18;--muted:#78716C;--border:#E8D5B7;
+  --green:#059669;--red:#DC2626;--blue:#1D4ED8;
+  --grad1:linear-gradient(135deg,#E8610A,#C5870A);
+  --grad2:linear-gradient(135deg,#5B3DC8,#1D4ED8);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+header{background:linear-gradient(120deg,#E8610A 0%,#8B1A8B 45%,#5B3DC8 100%);
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 20px rgba(232,97,10,.3)}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:1.8rem}
+header h1{font-size:1.2rem;font-weight:700;color:#fff}
+header p{font-size:.72rem;color:rgba(255,255,255,.82);margin-top:1px}
+.header-right{display:flex;align-items:center;gap:12px}
+.wallet-badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;padding:5px 12px;color:#fff;font-size:.78rem;font-weight:600;
+  display:none;align-items:center;gap:5px;cursor:pointer}
+.wallet-badge:hover{background:rgba(255,255,255,.25)}
+.user-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+  border-radius:20px;padding:5px 12px;color:#fff;font-size:.78rem;
+  display:none;align-items:center;gap:6px}
+.logout-btn{background:none;border:1px solid rgba(255,255,255,.4);color:#fff;
+  border-radius:6px;padding:3px 8px;font-size:.7rem;cursor:pointer;margin-left:4px}
+.logout-btn:hover{background:rgba(255,255,255,.2)}
+
+.steps-bar{display:flex;justify-content:center;gap:0;padding:10px 0;
+  background:#fff;border-bottom:2px solid var(--border)}
+.step{display:flex;align-items:center;gap:5px;padding:5px 12px;
+  font-size:.72rem;color:#A8A29E;border-radius:8px;font-weight:500;transition:.2s}
+.step.active{color:var(--saffron);font-weight:700}
+.step.done{color:var(--green);cursor:pointer}
+.step-num{width:20px;height:20px;border-radius:50%;border:2px solid currentColor;
+  display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff}
+.step.active .step-num{background:var(--saffron);border-color:var(--saffron);color:#fff}
+.step-sep{color:#D6C9B8;padding:0 2px;font-size:.65rem}
+
+main{max-width:820px;margin:0 auto;padding:20px 14px}
+.screen{display:none}.screen.active{display:block}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;
+  margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card-title{font-size:.95rem;font-weight:700;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;color:var(--saffron)}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.form-full{grid-column:1/-1}
+label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:4px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+input,select{width:100%;padding:9px 12px;background:#FFFBF5;
+  border:1.5px solid #E8D5B7;border-radius:9px;color:var(--text);
+  font-size:.9rem;outline:none;transition:.2s;font-family:inherit}
+input:focus,select:focus{border-color:var(--saffron);
+  box-shadow:0 0 0 3px rgba(232,97,10,.1);background:#fff}
+.hint{font-size:.68rem;color:#A8A29E;margin-top:3px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:10px;
+  font-weight:600;font-size:.86rem;cursor:pointer;border:none;transition:.2s;font-family:inherit}
+.btn-primary{background:var(--grad1);color:#fff;box-shadow:0 2px 10px rgba(232,97,10,.3)}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:#F5F0E8;color:var(--text);border:1.5px solid var(--border)}
+.btn-secondary:hover{background:#EDE8DC}
+.btn-outline{background:transparent;border:2px solid var(--saffron);color:var(--saffron)}
+.btn-outline:hover{background:var(--saffron);color:#fff}
+.btn-green{background:linear-gradient(135deg,#059669,#0D9488);color:#fff}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.btn-confirm{background:linear-gradient(135deg,#059669,#0D9488);color:#fff}
+.btn-correct{background:linear-gradient(135deg,#1D4ED8,#5B3DC8);color:#fff}
+.btn-ghost{background:rgba(232,97,10,.08);color:var(--saffron);border:1.5px solid rgba(232,97,10,.2)}
+.btn-ghost:hover{background:rgba(232,97,10,.15)}
+
+/* Auth screen */
+.auth-hero{text-align:center;padding:28px 16px 20px}
+.auth-hero .big-logo{font-size:3.5rem;margin-bottom:10px}
+.auth-hero h2{font-size:1.5rem;font-weight:700;color:var(--deep);margin-bottom:6px}
+.auth-hero p{font-size:.88rem;color:var(--muted);max-width:400px;margin:0 auto}
+.auth-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:18px}
+.auth-tab{flex:1;padding:10px;text-align:center;font-size:.86rem;font-weight:600;
+  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s}
+.auth-tab.active{color:var(--saffron);border-bottom-color:var(--saffron)}
+.auth-panel{display:none}.auth-panel.active{display:block}
+.auth-divider{text-align:center;margin:16px 0;position:relative}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;
+  width:42%;height:1px;background:var(--border)}
+.auth-divider::before{left:0}.auth-divider::after{right:0}
+.auth-divider span{font-size:.75rem;color:var(--muted);background:#fff;padding:0 10px;position:relative}
+.guest-card{background:linear-gradient(135deg,#FFF7ED,#FEF3C7);
+  border:1.5px solid #FCD34D;border-radius:12px;padding:16px;text-align:center}
+.lang-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.lang-pill{padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:600;
+  border:2px solid var(--border);cursor:pointer;transition:.2s;background:#fff}
+.lang-pill.selected{background:var(--saffron);color:#fff;border-color:var(--saffron)}
+
+/* Pred cards */
+.pred-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;
+  padding:16px;margin-bottom:11px;transition:.25s}
+.pred-card.confirmed{border-color:#86efac;background:#F0FDF4}
+.pred-card.corrected{border-color:#93c5fd;background:#EFF6FF}
+.pred-header{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.pred-emoji{font-size:1.4rem}
+.pred-cat{font-weight:700;font-size:.88rem;color:var(--deep)}
+.pred-statement{font-size:.86rem;line-height:1.55;color:var(--text);margin-bottom:9px;
+  padding:9px 12px;background:#FDF6EC;border-radius:8px;border-left:3px solid var(--saffron)}
+.pred-question{font-size:.8rem;color:var(--muted);margin-bottom:11px;font-style:italic}
+.pred-actions{display:flex;gap:8px;flex-wrap:wrap}
+.correction-row{display:none;margin-top:9px;gap:8px;align-items:center}
+.correction-row.show{display:flex}
+.correction-row input{flex:1;padding:7px 10px;font-size:.84rem}
+
+/* Loading */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-card{text-align:center;padding:40px;color:var(--muted)}
+.loading-card .big-spinner{width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--saffron);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+
+.lagna-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.lagna-chip{background:#EDE8DC;border-radius:8px;padding:5px 11px;
+  font-size:.76rem;color:var(--deep);font-weight:600}
+.lagna-chip span{font-weight:400;color:var(--muted)}
+
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:18px}
+.progress-fill{height:4px;border-radius:2px;background:var(--grad1);transition:.4s}
+
+.analysis-body p{margin-bottom:12px;line-height:1.65;font-size:.9rem}
+
+.pk-row{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.pk-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
+  border-radius:20px;font-size:.73rem;font-weight:600}
+.pk-pill.active{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+.pk-pill.inactive{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5}
+
+.chat-box{height:340px;overflow-y:auto;padding:10px;background:#FAFAF8;
+  border:1.5px solid var(--border);border-radius:12px;margin-bottom:10px}
+.msg{margin-bottom:12px}
+.msg .sender{font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:3px;
+  text-transform:uppercase;letter-spacing:.5px}
+.msg.user .bubble{background:var(--grad2);color:#fff;border-radius:14px 14px 4px 14px;
+  padding:9px 13px;font-size:.86rem;line-height:1.5;display:inline-block;max-width:85%}
+.msg.assistant .bubble{background:#fff;border:1.5px solid var(--border);
+  border-radius:14px 14px 14px 4px;padding:9px 13px;font-size:.86rem;line-height:1.5;max-width:90%}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row input{flex:1}
+
+.banner{background:linear-gradient(135deg,#FFF7ED,#FEF3C7);border:1.5px solid #FCD34D;
+  border-radius:12px;padding:12px 15px;margin-bottom:14px;font-size:.83rem}
+.banner strong{color:var(--gold)}
+.err-msg{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;
+  padding:9px 13px;font-size:.82rem;color:var(--red);margin-top:9px;display:none}
+.success-msg{background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;
+  padding:9px 13px;font-size:.82rem;color:var(--green);margin-top:9px;display:none}
+.info-box{background:linear-gradient(135deg,#F3E8FF,#E0E7FF);
+  border:1.5px solid #C4B5FD;border-radius:12px;padding:12px 15px;
+  font-size:.82rem;color:#4C1D95;margin-bottom:12px}
+
+/* Wallet modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;
+  align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;max-width:400px;width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{font-size:1rem;font-weight:700;margin-bottom:14px;color:var(--deep)}
+.credit-tier{border:1.5px solid var(--border);border-radius:10px;padding:12px;
+  margin-bottom:10px;cursor:pointer;transition:.2s}
+.credit-tier:hover,.credit-tier.selected{border-color:var(--saffron);background:#FFF7ED}
+.credit-tier .price{font-size:1.1rem;font-weight:700;color:var(--saffron)}
+.credit-tier .credits{font-size:.82rem;color:var(--muted)}
+.pay-tab{flex:1;padding:9px 4px;border:none;background:var(--card);color:var(--muted);
+  font-size:.8rem;font-weight:600;cursor:pointer;transition:.15s;border-right:1px solid var(--border)}
+.pay-tab:last-child{border-right:none}
+.pay-tab.active{background:var(--saffron);color:#fff}
+.pay-tab:hover:not(.active){background:#f5f0ff}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🪐</div>
+    <div>
+      <h1>Narayan Astro Reader</h1>
+      <p>An AI Powered Personal Vedic Astrologer</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="wallet-badge" id="walletBadge" onclick="openWalletModal()">
+      💳 <span id="walletAmt">$0.00</span>
+    </div>
+    <button id="btnHistory" onclick="showReadingHistory()"
+            style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);
+                   color:#fff;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:.78rem;
+                   font-weight:600" title="View past readings">📚 History</button>
+    <div class="user-badge" id="userBadge">
+      👤 <span id="userNameBadge">Guest</span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<div class="steps-bar" id="stepsBar" style="display:none">
+  <div class="step active" id="st1"><div class="step-num">1</div> <span>Birth Details</span></div>
+  <div class="step-sep">›</div>
+  <div class="step" id="st2"><div class="step-num">2</div> <span>Kundli Analysis</span></div>
+  <div class="step-sep">›</div>
+  <div class="step" id="st3"><div class="step-num">3</div> <span>Deep Reading</span></div>
+  <div class="step-sep">›</div>
+  <div class="step" id="st4"><div class="step-num">4</div> <span>Ask Anything</span></div>
+</div>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 0 — Auth (Welcome / Login / Register / Guest)
+══════════════════════════════════════════════════ -->
+<div id="serverStatusBar" style="display:none;padding:6px 14px;font-size:.78rem;text-align:center;border-radius:8px;margin:0 0 10px"></div>
+<div class="screen active" id="screen0">
+  <div class="auth-hero">
+    <div class="big-logo">🪐</div>
+    <h2>Narayan Astro Reader</h2>
+    <p>An AI Powered Personal Vedic Astrologer</p>
+  </div>
+
+  <!-- Language selection -->
+  <div class="card">
+    <div class="card-title">🌐 Preferred Language</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      All predictions and analysis will be delivered in your chosen language.
+    </div>
+    <div class="lang-pills" id="langPills">
+      <div class="lang-pill selected" onclick="selectLang('English',this)">🇬🇧 English</div>
+      <div class="lang-pill" onclick="selectLang('Hindi',this)">🇮🇳 हिंदी (Hindi)</div>
+      <div class="lang-pill" onclick="selectLang('Tamil',this)">🌺 தமிழ் (Tamil)</div>
+    </div>
+  </div>
+
+  <!-- Auth tabs -->
+  <div class="card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login',this)">🔑 Login</div>
+      <div class="auth-tab" onclick="switchAuthTab('register',this)">✨ Register</div>
+    </div>
+
+    <!-- Login panel -->
+    <div class="auth-panel active" id="panel-login">
+      <div class="form-grid">
+        <div class="form-full">
+          <label>Email Address</label>
+          <input id="loginEmail" type="email" placeholder="you@email.com"
+                 onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <div class="form-full">
+          <label>Password</label>
+          <input id="loginPassword" type="password" placeholder="Your password"
+                 onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+      </div>
+      <br>
+      <button class="btn btn-primary" onclick="doLogin()" id="btnLogin">
+        <span class="spinner" id="spinLogin" style="display:none"></span>
+        <span>🔑 Login to My Account</span>
+      </button>
+      <div class="err-msg" id="errLogin"></div>
+    </div>
+
+    <!-- Register panel -->
+    <div class="auth-panel" id="panel-register">
+      <div class="form-grid">
+        <div>
+          <label>Full Name</label>
+          <input id="regName" type="text" placeholder="e.g. Ravi Kumar"/>
+        </div>
+        <div>
+          <label>Email Address</label>
+          <input id="regEmail" type="email" placeholder="you@email.com"/>
+        </div>
+        <div>
+          <label>Password</label>
+          <input id="regPassword" type="password" placeholder="Min 6 characters"/>
+        </div>
+        <div>
+          <label>Confirm Password</label>
+          <input id="regPassword2" type="password" placeholder="Repeat password"/>
+        </div>
+        <div class="form-full">
+          <label>I am registering as</label>
+          <select id="regUserType" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg)">
+            <option value="general">👤 General User — Seeking personal readings</option>
+            <option value="astrologer">🔭 Professional Astrologer — Generating readings for clients</option>
+          </select>
+        </div>
+        <div class="form-full">
+          <label>My Region</label>
+          <select id="regRegion" onchange="updateWelcomeCreditInfo()"
+                  style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:var(--bg)">
+            <option value="India">🇮🇳 India (₹ INR)</option>
+            <option value="International">🌍 International ($ USD)</option>
+          </select>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:12px" id="welcomeCreditInfo">
+        📧 <strong>Verify your email</strong> to receive <strong>₹100 welcome credit</strong> — enough for your first complete Kundli + Deep Reading.
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()" id="btnRegister">
+        <span class="spinner" id="spinRegister" style="display:none"></span>
+        <span>✨ Create My Account</span>
+      </button>
+      <div class="err-msg" id="errRegister"></div>
+      <div class="success-msg" id="okRegister"></div>
+    </div>
+
+    <!-- Admin access footer -->
+    <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <a href="/admin" target="_blank" rel="noopener"
+         style="font-size:.72rem;color:var(--muted);text-decoration:none;opacity:.6"
+         title="Admin panel — opens in new tab">
+        ⚙ Admin Panel
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 1 — Birth Details
+══════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 0V — Email Verification Pending
+══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen0v">
+  <div class="auth-hero">
+    <div class="big-logo">📧</div>
+    <h2>Check Your Inbox</h2>
+    <p>A verification link has been sent to <strong id="pendingEmail">your email</strong></p>
+  </div>
+  <div class="card" style="text-align:center">
+    <div style="font-size:3rem;margin-bottom:12px">✉️</div>
+    <div style="font-size:1rem;font-weight:600;margin-bottom:8px">Verify your email to continue</div>
+    <div style="font-size:.88rem;color:var(--muted);margin-bottom:20px">
+      Once you click the verification link in your email, your account will be activated
+      and <strong id="pendingCreditAmt">₹100 welcome credit</strong> will be added to your wallet automatically.
+      <br><br>
+      After verifying, come back here and <strong>login</strong> to start your reading.
+    </div>
+    <button class="btn btn-primary" onclick="goToAuth()" style="margin-bottom:10px">
+      <span>🔑 I've Verified — Go to Login</span>
+    </button>
+    <br>
+    <button class="btn btn-secondary btn-sm" id="btnResend" onclick="resendVerification()">
+      <span>📨 Resend Verification Email</span>
+    </button>
+    <div id="resendMsg" style="font-size:.8rem;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<div class="screen" id="screen1">
+
+  <div id="returningBanner" class="banner" style="display:none">
+    🙏 Welcome back, <strong id="returningName">friend</strong>!
+    Your saved reading has been loaded.
+    <a href="#" onclick="skipToChat()" style="color:var(--deep);font-weight:600;margin-left:6px">
+      Jump to Q&amp;A →
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌟 Your Birth Details</div>
+    <div class="form-grid">
+      <div>
+        <label>Full Name</label>
+        <input id="name" type="text" placeholder="e.g. Ravi Kumar"/>
+      </div>
+      <div>
+        <label>Date of Birth *</label>
+        <input id="dob" type="date" required/>
+      </div>
+      <div>
+        <label>Time of Birth *</label>
+        <input id="tob" type="time" step="60" required/>
+        <div class="hint">24-hour format. Even ±15 min matters.</div>
+      </div>
+      <div>
+        <label>Place of Birth *</label>
+        <input id="pob" type="text" placeholder="e.g. Chennai, India" required/>
+      </div>
+      
+      <div>
+        <label>Language</label>
+        <select id="langSelect">
+          <option value="English">🇬🇧 English</option>
+          <option value="Hindi">🇮🇳 Hindi (हिंदी)</option>
+          <option value="Tamil">🌺 Tamil (தமிழ்)</option>
+        </select>
+      </div>
+    </div>
+    <br>
+    <button class="btn btn-primary" onclick="startReading()" id="btnStart">
+      <span class="spinner" id="spinnerStart" style="display:none"></span>
+      <span>🔮 Generate My Kundli</span>
+    </button>
+    <div class="err-msg" id="err1"></div>
+  </div>
+
+  <div class="info-box">
+    🛡️ <strong>Privacy:</strong> Birth data is used solely to compute your Vedic chart.
+    Registered users have readings saved for instant reload. No data is shared.
+  </div>
+</div>
+
+<!-- Calculating screen -->
+<div class="screen" id="screenCalc">
+  <div class="card loading-card">
+    <div class="big-spinner"></div>
+    <div style="font-size:1.05rem;font-weight:600;margin-bottom:7px">Computing your Kundli…</div>
+    <div style="font-size:.83rem;color:var(--muted)">
+      Calculating planetary positions, dashas, divisional charts<br>
+      and generating AI predictions. Please wait up to 60 seconds<br>
+      (first-time for a new city may geocode via Google).
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 2 — Kundli Analysis (renamed from Life Predictions)
+══════════════════════════════════════════════════ -->
+<div class="screen" id="screen2">
+  <div class="card" id="lagnaCard">
+    <div class="card-title">🪐 Your Birth Chart Summary</div>
+    <div class="lagna-row" id="lagnaRow"></div>
+    <div id="themeBox" style="display:none">
+      <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+                  letter-spacing:.5px;margin-bottom:5px">Your Life Theme</div>
+      <div id="themeText" style="font-size:.88rem;line-height:1.6;color:var(--text);
+                                  padding:9px 13px;background:#FDF6EC;border-radius:8px;
+                                  border-left:3px solid var(--gold)"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+    <div style="font-size:.8rem;color:var(--muted)">Respond to each prompt to unlock your deep reading</div>
+    <div style="font-size:.8rem;font-weight:600" id="progressText">0 / 0</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <div id="predictionsContainer"></div>
+
+  <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="refineReading()" id="btnRefine" disabled>
+      <span>✨ Get My Deep Reading</span>
+    </button>
+    <button class="btn btn-secondary" onclick="goToBirthDetails()">← Back</button>
+  </div>
+  <div class="err-msg" id="err2"></div>
+</div>
+
+<!-- Refining screen -->
+<div class="screen" id="screenRefining">
+  <div class="card loading-card">
+    <div class="big-spinner"></div>
+    <div style="font-size:1.05rem;font-weight:600;margin-bottom:7px">Calibrating your chart…</div>
+    <div style="font-size:.83rem;color:var(--muted)">
+      Identifying which planets are giving results for you<br>
+      and generating your personalised deep reading.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 3 — Deep Reading
+══════════════════════════════════════════════════ -->
+<div class="screen" id="screen3">
+  <div id="welcomeBackBanner" style="display:none;background:linear-gradient(135deg,#5b3dc8,#7c5cbf);
+       color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:12px;font-size:.88rem;
+       display:none;align-items:center;gap:12px">
+    <span style="font-size:1.4rem">🙏</span>
+    <div>
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:2px">
+        Welcome back, <span id="wbName">friend</span>!
+      </div>
+      <div style="opacity:.88">Your deep reading is right here. Continue your conversation below.</div>
+    </div>
+    <button onclick="openChat()" class="btn btn-secondary"
+            style="margin-left:auto;white-space:nowrap;font-size:.78rem;padding:6px 14px;
+                   background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff">
+      💬 Continue Chat →
+    </button>
+  </div>
+  <div class="card">
+    <div class="card-title">🔮 Your Personalised Vedic Reading</div>
+    <div class="analysis-body" id="analysisText"></div>
+  </div>
+
+  <div class="card" id="planetKnowledgeCard" style="display:none">
+    <div class="card-title">🪐 Planet Calibration</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:7px">
+      Based on your responses, these planets are confirmed to be active for you:
+    </div>
+    <div class="pk-row" id="pkActive"></div>
+    <div id="pkInactiveRow" style="display:none">
+      <div style="font-size:.73rem;color:var(--muted);margin:6px 0 4px">Planets needing re-examination:</div>
+      <div class="pk-row" id="pkInactive"></div>
+    </div>
+  </div>
+
+  <div class="card" id="saveCard" style="display:none">
+    <div class="card-title">💾 Save Your Reading</div>
+    <div style="font-size:.83rem;color:var(--muted);margin-bottom:10px">
+      Save to your account to reload instantly next time — no recalculation needed.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="saveEmail" type="email" placeholder="your@email.com" style="flex:1;min-width:180px"/>
+      <button class="btn btn-primary" onclick="saveReading()">💾 Save</button>
+    </div>
+    <div id="saveMsg" style="font-size:.8rem;margin-top:7px;display:none"></div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openChat()">💬 Ask Your Questions →</button>
+    <button class="btn btn-secondary" id="btnEmailReport3" onclick="emailReport()">📧 Email My Report</button>
+    <button class="btn btn-secondary" onclick="newReading()">← New Reading</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 4 — Chat Q&A
+══════════════════════════════════════════════════ -->
+<div class="screen" id="screen4">
+  <div class="card">
+    <div class="card-title">💬 Ask Your Jyotish AI</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:10px">
+      Ask anything — career, relationships, health, upcoming events, remedies, or spiritual path.
+    </div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text"
+             placeholder="e.g. When will I get a promotion? What remedies for health?"
+             onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="btn btn-primary" onclick="sendChat()" id="btnSend">Send</button>
+    </div>
+    <div class="err-msg" id="err4"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+    <button class="btn btn-secondary" onclick="showScreen('screen3');setStep(3)">
+      📖 View Deep Reading
+    </button>
+    <button class="btn btn-secondary" id="btnEmailReport4" onclick="emailReport()">
+      📧 Email My Report
+    </button>
+    <button class="btn btn-secondary" onclick="newReading()">← New Reading</button>
+  </div>
+</div>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════
+     HISTORY PANEL (slide-in overlay)
+══════════════════════════════════════════════════ -->
+<div id="historyPanel" style="display:none;position:fixed;inset:0;z-index:200;
+     background:rgba(0,0,0,.45);align-items:flex-start;justify-content:center;padding:20px 12px">
+  <div style="background:var(--card);border-radius:16px;width:100%;max-width:620px;
+              max-height:88vh;overflow-y:auto;padding:22px 22px 18px;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-weight:700;font-size:1.05rem;color:var(--primary)">📚 My Reading History</div>
+      <button onclick="closeHistoryPanel()" style="background:none;border:none;cursor:pointer;
+              font-size:1.3rem;color:var(--muted);padding:2px 8px">✕</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px">
+      Click any reading to view the full analysis and chat history.
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- Wallet top-up modal -->
+<div class="modal-overlay" id="walletModal">
+  <div class="modal" id="walletModalInner">
+    <h3>💳 Top Up Reading Credits</h3>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">
+      <span>Current balance:</span> <strong id="modalBalance">₹0</strong>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px" id="walletPricingInfo">
+      Kundli + Deep Reading: <strong id="modalReadingCost">₹100</strong> &nbsp;·&nbsp;
+      Chat question: <strong id="modalChatCost">₹25</strong>
+    </div>
+    <div class="credit-tier selected" id="tier1" onclick="selectTier(1,this)">
+      <div class="price" id="tier1Price">₹99</div>
+      <div class="credits" id="tier1Desc">Get ₹110 credit <span style="color:var(--green);font-size:.75rem">~10% bonus</span></div>
+    </div>
+    <div class="credit-tier" id="tier2" onclick="selectTier(2,this)">
+      <div class="price" id="tier2Price">₹249</div>
+      <div class="credits" id="tier2Desc">Get ₹300 credit <span style="color:var(--green);font-size:.75rem">₹51 gift — Best value</span></div>
+    </div>
+    <!-- Transaction History -->
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:600;font-size:.85rem">📋 Transaction History</div>
+        <button onclick="loadTransactions()" class="btn btn-secondary"
+                style="font-size:.72rem;padding:3px 10px">Refresh</button>
+      </div>
+      <div id="txnList" style="max-height:220px;overflow-y:auto;font-size:.78rem"></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="showPaymentForm()" id="btnTopup">Proceed to Payment</button>
+      <button class="btn btn-secondary" onclick="closeWalletModal()">Cancel</button>
+    </div>
+    <div id="topupMsg" style="font-size:.8rem;margin-top:8px;display:none"></div>
+  </div>
+</div>
+
+<!-- Payment form modal (shown after "Proceed to Payment") -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal" style="max-width:420px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <h3 style="margin:0">🔒 Secure Payment</h3>
+      <span style="background:#FEF3C7;color:#92400E;font-size:.7rem;font-weight:700;
+                   padding:3px 8px;border-radius:20px;border:1px solid #FCD34D">
+        🧪 TEST MODE — No real charge
+      </span>
+    </div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:14px" id="payAmtLine">
+      Amount: <strong id="payAmtDisplay">₹99</strong>
+    </div>
+
+    <!-- Payment method tabs -->
+    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px">
+      <button class="pay-tab active" id="tabUPI"  onclick="switchPayTab('upi')">📱 UPI</button>
+      <button class="pay-tab"        id="tabCard" onclick="switchPayTab('card')">💳 Card</button>
+      <button class="pay-tab"        id="tabNB"   onclick="switchPayTab('nb')">🏦 Net Banking</button>
+    </div>
+
+    <!-- UPI panel -->
+    <div id="panelUPI">
+      <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">UPI ID</label>
+      <input id="upiId" type="text" placeholder="yourname@upi" autocomplete="off"
+             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);
+                    border-radius:6px;background:var(--card);color:var(--fg);font-size:.9rem;margin-bottom:6px">
+      <div style="font-size:.72rem;color:var(--muted)">e.g. phone@paytm, name@oksbi, user@ybl</div>
+    </div>
+
+    <!-- Card panel -->
+    <div id="panelCard" style="display:none">
+      <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Card Number</label>
+      <input id="cardNum" type="text" placeholder="1234 5678 9012 3456" maxlength="19"
+             oninput="fmtCard(this)"
+             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);
+                    border-radius:6px;background:var(--card);color:var(--fg);font-size:.9rem;margin-bottom:10px;letter-spacing:.05em">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Expiry</label>
+          <input id="cardExp" type="text" placeholder="MM / YY" maxlength="7"
+                 oninput="fmtExpiry(this)"
+                 style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);
+                        border-radius:6px;background:var(--card);color:var(--fg);font-size:.9rem">
+        </div>
+        <div style="flex:1">
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">CVV</label>
+          <input id="cardCVV" type="password" placeholder="•••" maxlength="4"
+                 style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);
+                        border-radius:6px;background:var(--card);color:var(--fg);font-size:.9rem">
+        </div>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Visa · Mastercard · Rupay · Amex</div>
+    </div>
+
+    <!-- Net Banking panel -->
+    <div id="panelNB" style="display:none">
+      <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:6px">Select Bank</label>
+      <select id="nbBank"
+              style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);
+                     border-radius:6px;background:var(--card);color:var(--fg);font-size:.9rem">
+        <option value="">-- Choose your bank --</option>
+        <option>State Bank of India (SBI)</option>
+        <option>HDFC Bank</option>
+        <option>ICICI Bank</option>
+        <option>Axis Bank</option>
+        <option>Kotak Mahindra Bank</option>
+        <option>Punjab National Bank</option>
+        <option>Bank of Baroda</option>
+        <option>Canara Bank</option>
+        <option>IndusInd Bank</option>
+        <option>Yes Bank</option>
+      </select>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:6px">
+        You'll be redirected to your bank's secure login page.
+      </div>
+    </div>
+
+    <div id="payErr" style="color:#e53e3e;font-size:.8rem;margin-top:10px;display:none"></div>
+
+    <!-- Processing animation (hidden by default) -->
+    <div id="payProcessing" style="display:none;text-align:center;padding:18px 0">
+      <div class="big-spinner" style="margin:0 auto 12px"></div>
+      <div style="font-size:.9rem;font-weight:600">Processing payment…</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:4px">Please do not close this window</div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap" id="payBtnRow">
+      <button class="btn btn-primary" onclick="submitMockPayment()" id="btnPay" style="flex:1">
+        Pay <span id="payBtnAmt">₹99</span>
+      </button>
+      <button class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════
+// Translations
+// ════════════════════════════════════════════════════════════════
+const TRANSLATIONS = {
+  English: {
+    // Steps
+    step1: 'Birth Details', step2: 'Kundli Analysis', step3: 'Deep Reading', step4: 'Ask Anything',
+    // Header
+    header_sub: 'An AI Powered Personal Vedic Astrologer', btn_logout: 'Logout',
+    // Auth screen
+    hero_title: 'Narayan Astro Reader',
+    hero_sub: 'AI-powered Vedic astrology — personalised predictions, planet calibration, and free Q&A',
+    lang_card_title: '🌐 Preferred Language',
+    lang_card_desc: 'All predictions and analysis will be delivered in your chosen language.',
+    tab_login: '🔑 Login', tab_register: '✨ Register',
+    label_email: 'Email Address', label_password: 'Password',
+    label_fullname: 'Full Name', label_confirm_password: 'Confirm Password',
+    label_register_as: 'I am registering as',
+    opt_general: '👤 General User — Seeking personal readings',
+    opt_astrologer: '🔭 Professional Astrologer — Generating readings for clients',
+    info_verify: '📧 <strong>Verify your email</strong> after registration to receive <strong>₹100 welcome credit</strong> (India) / <strong>$1.00</strong> (International) — enough for your first complete reading.',
+    btn_login: '🔑 Login to My Account', btn_register: '✨ Create My Account',
+    ph_email: 'you@email.com', ph_password: 'Your password',
+    ph_name: 'e.g. Ravi Kumar', ph_min6: 'Min 6 characters', ph_repeat: 'Repeat password',
+    // Verification pending
+    verify_title: 'Check Your Inbox',
+    verify_sent: 'A verification link has been sent to',
+    verify_instr: 'Verify your email to continue',
+    verify_desc: 'Once you click the verification link in your email, your account will be activated and <strong id="pendingCreditAmt">₹100 welcome credit</strong> will be added to your wallet automatically.<br><br>After verifying, come back here and <strong>login</strong> to start your reading.',
+    btn_go_login: "🔑 I've Verified — Go to Login",
+    btn_resend: '📨 Resend Verification Email',
+    // Birth details
+    card_birth_title: '🌟 Your Birth Details',
+    label_dob: 'Date of Birth *', label_tob: 'Time of Birth *',
+    hint_tob: '24-hour format. Even ±15 min matters.',
+    label_pob: 'Place of Birth *', ph_pob: 'e.g. Chennai, India',
+    label_marital: 'Marital Status',
+    opt_prefer_not_say: 'Prefer not to say', opt_single: 'Single / Unmarried',
+    opt_relationship: 'In a relationship', opt_engaged: 'Engaged',
+    opt_married: 'Married', opt_divorced: 'Divorced', opt_widowed: 'Widowed',
+    hint_marital: 'Tailors which predictions are shown.',
+    label_language: 'Language',
+    btn_generate: '🔮 Generate My Kundli',
+    privacy_text: '🛡️ <strong>Privacy:</strong> Birth data is used solely to compute your Vedic chart. Registered users have readings saved for instant reload. No data is shared.',
+    // Loading
+    computing_title: 'Computing your Kundli…',
+    computing_sub: 'Calculating planetary positions, dashas, divisional charts<br>and generating AI predictions. This takes 15–40 seconds.',
+    calibrating_title: 'Calibrating your chart…',
+    calibrating_sub: 'Identifying which planets are giving results for you<br>and generating your personalised deep reading.',
+    // Screen 2
+    chart_title: '🪐 Your Birth Chart Summary',
+    life_theme_label: 'Your Life Theme',
+    respond_hint: 'Respond to each prompt to unlock your deep reading',
+    btn_deep_reading: '✨ Get My Deep Reading',
+    btn_back: '← Back',
+    // Screen 3
+    reading_title: '🔮 Your Personalised Vedic Reading',
+    planet_cal_title: '🪐 Planet Calibration',
+    planet_active_label: 'Based on your responses, these planets are confirmed to be active for you:',
+    planet_inactive_label: 'Planets needing re-examination:',
+    save_title: '💾 Save Your Reading',
+    save_desc: 'Save to your account to reload instantly next time — no recalculation needed.',
+    btn_save: '💾 Save', btn_ask_questions: '💬 Ask Your Questions →', btn_new_reading: '← New Reading',
+    // Screen 4
+    chat_title: '💬 Ask Your Jyotish AI',
+    chat_desc: 'Ask anything — career, relationships, health, upcoming events, remedies, or spiritual path.',
+    chat_placeholder: 'e.g. When will I get a promotion? What remedies for health?',
+    btn_send: 'Send',
+    // Wallet
+    wallet_title: '💳 Top Up Reading Credits',
+    wallet_balance_label: 'Current balance:',
+    wallet_cost: 'Each Kundli + Deep Reading costs <strong>₹100</strong> (India) / <strong>$1.00</strong> (International).',
+    tier1_credits: '10 readings · $2.00 value',
+    tier2_credits: '30 readings · $6.00 value',
+    best_value: 'Best value',
+    btn_proceed_payment: 'Proceed to Payment', btn_cancel: 'Cancel',
+    // Prediction feedback
+    pred_yes: '✓ Yes, accurate', pred_clarify: '✏️ Let me clarify…', pred_save_correction: 'Save',
+    pred_correction_ph: 'Tell us what is actually true…',
+  },
+
+  Hindi: {
+    step1: 'जन्म विवरण', step2: 'कुंडली विश्लेषण', step3: 'गहरा पठन', step4: 'कुछ भी पूछें',
+    header_sub: 'AI संचालित व्यक्तिगत वैदिक ज्योतिषी', btn_logout: 'लॉगआउट',
+    hero_title: 'नारायण एस्ट्रो रीडर',
+    hero_sub: 'AI-संचालित वैदिक ज्योतिष — व्यक्तिगत भविष्यवाणी, ग्रह कैलिब्रेशन',
+    lang_card_title: '🌐 पसंदीदा भाषा',
+    lang_card_desc: 'सभी भविष्यवाणियाँ और विश्लेषण आपकी चुनी हुई भाषा में दिए जाएंगे।',
+    tab_login: '🔑 लॉगिन', tab_register: '✨ पंजीकरण',
+    label_email: 'ईमेल पता', label_password: 'पासवर्ड',
+    label_fullname: 'पूरा नाम', label_confirm_password: 'पासवर्ड की पुष्टि करें',
+    label_register_as: 'मैं इस रूप में पंजीकरण कर रहा/रही हूँ',
+    opt_general: '👤 सामान्य उपयोगकर्ता — व्यक्तिगत रीडिंग',
+    opt_astrologer: '🔭 पेशेवर ज्योतिषी — ग्राहकों के लिए रीडिंग',
+    info_verify: '📧 पंजीकरण के बाद <strong>अपना ईमेल सत्यापित करें</strong> और <strong>₹100 स्वागत क्रेडिट</strong> (भारत) / <strong>$1.00</strong> (अंतर्राष्ट्रीय) प्राप्त करें।',
+    btn_login: '🔑 मेरे खाते में लॉगिन करें', btn_register: '✨ मेरा खाता बनाएं',
+    ph_email: 'aap@email.com', ph_password: 'आपका पासवर्ड',
+    ph_name: 'जैसे: रवि कुमार', ph_min6: 'कम से कम 6 अक्षर', ph_repeat: 'पासवर्ड दोहराएं',
+    verify_title: 'अपना इनबॉक्स जांचें',
+    verify_sent: 'सत्यापन लिंक भेजा गया है',
+    verify_instr: 'जारी रखने के लिए अपना ईमेल सत्यापित करें',
+    verify_desc: 'ईमेल में सत्यापन लिंक क्लिक करने पर आपका खाता सक्रिय होगा और <strong id="pendingCreditAmt">₹100 स्वागत क्रेडिट</strong> स्वचालित रूप से जुड़ जाएगा।<br><br>सत्यापन के बाद यहाँ वापस आएं और <strong>लॉगिन</strong> करें।',
+    btn_go_login: '🔑 मैंने सत्यापित किया — लॉगिन पर जाएं',
+    btn_resend: '📨 सत्यापन ईमेल दोबारा भेजें',
+    card_birth_title: '🌟 आपका जन्म विवरण',
+    label_dob: 'जन्म तिथि *', label_tob: 'जन्म समय *',
+    hint_tob: '24 घंटे का प्रारूप। ±15 मिनट भी महत्वपूर्ण है।',
+    label_pob: 'जन्म स्थान *', ph_pob: 'जैसे: चेन्नई, भारत',
+    label_marital: 'वैवाहिक स्थिति',
+    opt_prefer_not_say: 'बताना नहीं चाहता/चाहती', opt_single: 'अविवाहित',
+    opt_relationship: 'रिश्ते में', opt_engaged: 'सगाई हुई',
+    opt_married: 'विवाहित', opt_divorced: 'तलाकशुदा', opt_widowed: 'विधवा/विधुर',
+    hint_marital: 'दिखाई जाने वाली भविष्यवाणियों को अनुकूलित करता है।',
+    label_language: 'भाषा',
+    btn_generate: '🔮 मेरी कुंडली उत्पन्न करें',
+    privacy_text: '🛡️ <strong>गोपनीयता:</strong> जन्म डेटा केवल वैदिक चार्ट गणना के लिए उपयोग किया जाता है।',
+    computing_title: 'आपकी कुंडली की गणना हो रही है…',
+    computing_sub: 'ग्रह स्थिति, दशा, विभागीय चार्ट की गणना<br>और AI भविष्यवाणियाँ उत्पन्न हो रही हैं। 15–40 सेकंड लगेंगे।',
+    calibrating_title: 'आपकी कुंडली कैलिब्रेट हो रही है…',
+    calibrating_sub: 'आपके लिए परिणाम देने वाले ग्रहों की पहचान हो रही है<br>और आपका व्यक्तिगत गहरा पठन तैयार हो रहा है।',
+    chart_title: '🪐 आपकी जन्म कुंडली सारांश',
+    life_theme_label: 'आपका जीवन विषय',
+    respond_hint: 'अपना गहरा पठन अनलॉक करने के लिए प्रत्येक प्रश्न का उत्तर दें',
+    btn_deep_reading: '✨ मेरा गहरा पठन प्राप्त करें',
+    btn_back: '← वापस',
+    reading_title: '🔮 आपका व्यक्तिगत वैदिक पठन',
+    planet_cal_title: '🪐 ग्रह कैलिब्रेशन',
+    planet_active_label: 'आपकी प्रतिक्रियाओं के आधार पर ये ग्रह आपके लिए सक्रिय हैं:',
+    planet_inactive_label: 'पुनर्परीक्षण की आवश्यकता वाले ग्रह:',
+    save_title: '💾 आपका पठन सहेजें',
+    save_desc: 'तुरंत पुनः लोड करने के लिए अपने खाते में सहेजें — पुनर्गणना की आवश्यकता नहीं।',
+    btn_save: '💾 सहेजें', btn_ask_questions: '💬 अपने प्रश्न पूछें →', btn_new_reading: '← नई रीडिंग',
+    chat_title: '💬 अपने ज्योतिष AI से पूछें',
+    chat_desc: 'कुछ भी पूछें — करियर, रिश्ते, स्वास्थ्य, आगामी घटनाएं, उपाय या आध्यात्मिक मार्ग।',
+    chat_placeholder: 'जैसे: मुझे प्रमोशन कब मिलेगा? स्वास्थ्य के लिए उपाय?',
+    btn_send: 'भेजें',
+    wallet_title: '💳 रीडिंग क्रेडिट टॉप अप करें',
+    wallet_balance_label: 'वर्तमान शेष:',
+    wallet_cost: 'प्रत्येक कुंडली + गहरी रीडिंग: <strong>₹100</strong> (भारत) / <strong>$1.00</strong> (अंतर्राष्ट्रीय)।',
+    tier1_credits: '10 रीडिंग · $2.00 मूल्य',
+    tier2_credits: '30 रीडिंग · $6.00 मूल्य',
+    best_value: 'सर्वोत्तम मूल्य',
+    btn_proceed_payment: 'भुगतान के लिए आगे बढ़ें', btn_cancel: 'रद्द करें',
+    pred_yes: '✓ हाँ, सटीक है', pred_clarify: '✏️ स्पष्ट करना चाहता/चाहती हूँ…',
+    pred_save_correction: 'सहेजें', pred_correction_ph: 'बताएं वास्तव में क्या सच है…',
+  },
+
+  Tamil: {
+    step1: 'பிறப்பு விவரங்கள்', step2: 'ஜாதக பகுப்பாய்வு', step3: 'ஆழமான வாசிப்பு', step4: 'எதுவும் கேளுங்கள்',
+    header_sub: 'AI இயங்கும் தனிப்பட்ட வேத ஜோதிடர்', btn_logout: 'வெளியேறு',
+    hero_title: 'நாராயண் அஸ்ட்ரோ ரீடர்',
+    hero_sub: 'AI-இயங்கும் வேத ஜோதிடம் — தனிப்பட்ட கணிப்புகள், கோள் ஒத்திசைவு',
+    lang_card_title: '🌐 விருப்பமான மொழி',
+    lang_card_desc: 'அனைத்து கணிப்புகளும் பகுப்பாய்வும் தேர்ந்தெடுத்த மொழியில் வழங்கப்படும்.',
+    tab_login: '🔑 உள்நுழைவு', tab_register: '✨ பதிவு செய்க',
+    label_email: 'மின்னஞ்சல் முகவரி', label_password: 'கடவுச்சொல்',
+    label_fullname: 'முழு பெயர்', label_confirm_password: 'கடவுச்சொல்லை உறுதிப்படுத்தவும்',
+    label_register_as: 'நான் பதிவு செய்கிறேன்',
+    opt_general: '👤 பொது பயனர் — தனிப்பட்ட வாசிப்பு',
+    opt_astrologer: '🔭 தொழில்முறை ஜோதிடர் — வாடிக்கையாளர்களுக்கு வாசிப்பு',
+    info_verify: '📧 பதிவிற்குப் பிறகு <strong>மின்னஞ்சலை சரிபார்க்கவும்</strong> மற்றும் <strong>₹100 வரவேற்பு கடன்</strong> (இந்தியா) / <strong>$1.00</strong> (சர்வதேசம்) பெறுங்கள்.',
+    btn_login: '🔑 என் கணக்கில் உள்நுழைக', btn_register: '✨ என் கணக்கை உருவாக்கு',
+    ph_email: 'neenga@email.com', ph_password: 'உங்கள் கடவுச்சொல்',
+    ph_name: 'எ.கா. ரவி குமார்', ph_min6: 'குறைந்தது 6 எழுத்துகள்', ph_repeat: 'கடவுச்சொல்லை திரும்ப உள்ளிடவும்',
+    verify_title: 'உங்கள் இன்பாக்ஸ் சரிபாருங்கள்',
+    verify_sent: 'சரிபார்ப்பு இணைப்பு அனுப்பப்பட்டது',
+    verify_instr: 'தொடர உங்கள் மின்னஞ்சலை சரிபார்க்கவும்',
+    verify_desc: 'மின்னஞ்சலில் உள்ள சரிபார்ப்பு இணைப்பை கிளிக் செய்தவுடன் <strong id="pendingCreditAmt">₹100 வரவேற்பு கடன்</strong> தானாக சேர்க்கப்படும்.<br><br>சரிபார்த்த பிறகு இங்கே திரும்பி <strong>உள்நுழைய</strong>வும்.',
+    btn_go_login: '🔑 சரிபார்த்தேன் — உள்நுழைவிற்கு செல்க',
+    btn_resend: '📨 சரிபார்ப்பு மின்னஞ்சலை மீண்டும் அனுப்பு',
+    card_birth_title: '🌟 உங்கள் பிறப்பு விவரங்கள்',
+    label_dob: 'பிறந்த தேதி *', label_tob: 'பிறந்த நேரம் *',
+    hint_tob: '24 மணி நேர வடிவம். ±15 நிமிடம் முக்கியம்.',
+    label_pob: 'பிறந்த இடம் *', ph_pob: 'எ.கா. சென்னை, இந்தியா',
+    label_marital: 'திருமண நிலை',
+    opt_prefer_not_say: 'சொல்ல விரும்பவில்லை', opt_single: 'திருமணமாகாத',
+    opt_relationship: 'உறவில் இருக்கிறேன்', opt_engaged: 'நிச்சயதார்த்தம் ஆனவர்',
+    opt_married: 'திருமணமான', opt_divorced: 'விவாகரத்தானவர்', opt_widowed: 'கணவன்/மனைவி இழந்தவர்',
+    hint_marital: 'காட்டப்படும் கணிப்புகளை தனிப்பயனாக்குகிறது.',
+    label_language: 'மொழி',
+    btn_generate: '🔮 என் ஜாதகம் உருவாக்கு',
+    privacy_text: '🛡️ <strong>தனியுரிமை:</strong> பிறப்பு தரவு வேத ஜாதகம் கணக்கிட மட்டுமே பயன்படுத்தப்படும்.',
+    computing_title: 'உங்கள் ஜாதகம் கணக்கிடப்படுகிறது…',
+    computing_sub: 'கோள் நிலைகள், தசாக்கள், விபாக ஜாதகங்களை கணக்கிடுகிறோம்<br>மற்றும் AI கணிப்புகள் உருவாக்கப்படுகின்றன. 15–40 விநாடிகள் ஆகும்.',
+    calibrating_title: 'உங்கள் ஜாதகம் ஒத்திசைக்கப்படுகிறது…',
+    calibrating_sub: 'எந்த கோள்கள் பலன் தருகின்றன என்பதை அறிகிறோம்<br>மற்றும் உங்கள் தனிப்பட்ட ஆழமான வாசிப்பு தயாரிக்கப்படுகிறது.',
+    chart_title: '🪐 உங்கள் ஜாதக சுருக்கம்',
+    life_theme_label: 'உங்கள் வாழ்க்கை கருப்பொருள்',
+    respond_hint: 'உங்கள் ஆழமான வாசிப்பை திறக்க ஒவ்வொரு கேள்விக்கும் பதிலளிக்கவும்',
+    btn_deep_reading: '✨ என் ஆழமான வாசிப்பு பெறு',
+    btn_back: '← திரும்பு',
+    reading_title: '🔮 உங்கள் தனிப்பட்ட வேத வாசிப்பு',
+    planet_cal_title: '🪐 கோள் ஒத்திசைவு',
+    planet_active_label: 'உங்கள் பதில்களின் அடிப்படையில் இந்த கோள்கள் உங்களுக்கு செயலில் உள்ளன:',
+    planet_inactive_label: 'மறுபரிசீலனை தேவைப்படும் கோள்கள்:',
+    save_title: '💾 உங்கள் வாசிப்பை சேமிக்கவும்',
+    save_desc: 'அடுத்த முறை உடனடியாக மீண்டும் ஏற்ற உங்கள் கணக்கில் சேமிக்கவும்.',
+    btn_save: '💾 சேமி', btn_ask_questions: '💬 உங்கள் கேள்விகளை கேளுங்கள் →', btn_new_reading: '← புதிய வாசிப்பு',
+    chat_title: '💬 உங்கள் ஜோதிட AI ஐ கேளுங்கள்',
+    chat_desc: 'எதுவும் கேளுங்கள் — வாழ்க்கை, உறவு, ஆரோக்கியம், நிகழ்வுகள், தீர்வுகள் அல்லது ஆன்மீக பாதை.',
+    chat_placeholder: 'எ.கா. எனக்கு பதவி உயர்வு எப்போது? ஆரோக்கியத்திற்கு தீர்வுகள்?',
+    btn_send: 'அனுப்பு',
+    wallet_title: '💳 வாசிப்பு கடன்களை நிரப்புக',
+    wallet_balance_label: 'தற்போதைய இருப்பு:',
+    wallet_cost: 'ஒவ்வொரு கோட்சார + ஆழமான வாசிப்பும்: <strong>₹100</strong> (இந்தியா) / <strong>$1.00</strong> (சர்வதேசம்).',
+    tier1_credits: '10 வாசிப்பு · $2.00 மதிப்பு',
+    tier2_credits: '30 வாசிப்பு · $6.00 மதிப்பு',
+    best_value: 'சிறந்த மதிப்பு',
+    btn_proceed_payment: 'கட்டணத்திற்கு தொடரவும்', btn_cancel: 'ரத்து செய்க',
+    pred_yes: '✓ ஆம், சரியானது', pred_clarify: '✏️ தெளிவுபடுத்துகிறேன்…',
+    pred_save_correction: 'சேமி', pred_correction_ph: 'உண்மையில் என்ன என்று சொல்லுங்கள்…',
+  }
+};
+
+function applyTranslations(lang) {
+  const T = TRANSLATIONS[lang] || TRANSLATIONS['English'];
+
+  function setText(sel, key, html) {
+    const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+    if (!el || !T[key]) return;
+    if (html) el.innerHTML = T[key]; else el.textContent = T[key];
+  }
+  function setPlaceholder(id, key) {
+    const el = document.getElementById(id);
+    if (el && T[key]) el.placeholder = T[key];
+  }
+  function setOptionText(selectId, value, key) {
+    const sel = document.getElementById(selectId);
+    if (!sel || !T[key]) return;
+    const opt = Array.from(sel.options).find(o => o.value === value);
+    if (opt) opt.textContent = T[key];
+  }
+  function setButtonText(id, key) {
+    const el = document.getElementById(id);
+    if (!el || !T[key]) return;
+    // Preserve spinner span (including its id attribute) — only update text node
+    const spinner = el.querySelector('.spinner');
+    const spinnerHTML = spinner ? spinner.outerHTML : '';
+    el.innerHTML = spinnerHTML + T[key];
+  }
+
+  // Steps bar
+  ['st1','st2','st3','st4'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) { const num = el.querySelector('.step-num'); el.innerHTML = ''; if(num) el.appendChild(num); el.append(' ' + T['step'+(i+1)]); }
+  });
+
+  // Header
+  setText('header p', 'header_sub');
+  setText('.logout-btn', 'btn_logout');
+
+  // Auth hero
+  setText('.auth-hero h2', 'hero_title');
+  setText('.auth-hero p', 'hero_sub');
+
+  // Language card
+  const cards = document.querySelectorAll('.card');
+  if (cards[0]) {
+    const ct = cards[0].querySelector('.card-title');
+    if (ct) ct.textContent = T.lang_card_title;
+    const desc = cards[0].querySelector('div[style*="font-size:.82rem"]');
+    if (desc) desc.textContent = T.lang_card_desc;
+  }
+
+  // Auth tabs
+  const tabs = document.querySelectorAll('.auth-tab');
+  if (tabs[0]) tabs[0].textContent = T.tab_login;
+  if (tabs[1]) tabs[1].textContent = T.tab_register;
+
+  // Login form
+  const loginForm = document.getElementById('panel-login');
+  if (loginForm) {
+    const labels = loginForm.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = T.label_email;
+    if (labels[1]) labels[1].textContent = T.label_password;
+    setPlaceholder('loginEmail', 'ph_email');
+    setPlaceholder('loginPassword', 'ph_password');
+  }
+  setButtonText('btnLogin', 'btn_login');
+
+  // Register form
+  const regForm = document.getElementById('panel-register');
+  if (regForm) {
+    const labels = regForm.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = T.label_fullname;
+    if (labels[1]) labels[1].textContent = T.label_email;
+    if (labels[2]) labels[2].textContent = T.label_password;
+    if (labels[3]) labels[3].textContent = T.label_confirm_password;
+    if (labels[4]) labels[4].textContent = T.label_register_as;
+    setPlaceholder('regName', 'ph_name');
+    setPlaceholder('regPassword', 'ph_min6');
+    setPlaceholder('regPassword2', 'ph_repeat');
+    setOptionText('regUserType', 'general', 'opt_general');
+    setOptionText('regUserType', 'astrologer', 'opt_astrologer');
+    const infoBox = regForm.querySelector('.info-box');
+    if (infoBox && T.info_verify) {
+      infoBox.innerHTML = T.info_verify;
+      // Keep region selector in sync — re-run to update the specific credit amount
+      updateWelcomeCreditInfo();
+    }
+  }
+  setButtonText('btnRegister', 'btn_register');
+
+  // Screen 0V — verification pending
+  const s0v = document.getElementById('screen0v');
+  if (s0v) {
+    const h2 = s0v.querySelector('h2');
+    if (h2) h2.textContent = T.verify_title;
+    const heroP = s0v.querySelector('.auth-hero p');
+    if (heroP) heroP.innerHTML = T.verify_sent + ' <strong id="pendingEmail">' + (window._pendingEmail || 'your email') + '</strong>';
+    const instrDiv = s0v.querySelector('.card div[style*="font-weight:600"]');
+    if (instrDiv) instrDiv.textContent = T.verify_instr;
+    const descDiv = s0v.querySelector('.card div[style*=".88rem"]');
+    if (descDiv) {
+      descDiv.innerHTML = T.verify_desc;
+      // Re-apply region-specific credit amount after translation overwrites content
+      const pcEl = document.getElementById('pendingCreditAmt');
+      if (pcEl) {
+        const pendingReg = window._pendingRegion || 'India';
+        pcEl.textContent = (pendingReg === 'India') ? '₹100 welcome credit' : '$1.00 welcome credit';
+      }
+    }
+    const goBtn = s0v.querySelector('.btn-primary');
+    if (goBtn) goBtn.innerHTML = T.btn_go_login;
+    const resendBtn = document.getElementById('btnResend');
+    if (resendBtn) resendBtn.innerHTML = T.btn_resend;
+  }
+
+  // Screen 1 — birth details
+  const s1 = document.getElementById('screen1');
+  if (s1) {
+    const ct = s1.querySelector('.card-title');
+    if (ct) ct.textContent = T.card_birth_title;
+    const labels = s1.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = T.label_fullname;
+    if (labels[1]) labels[1].textContent = T.label_dob;
+    if (labels[2]) labels[2].textContent = T.label_tob;
+    if (labels[3]) labels[3].textContent = T.label_pob;
+    if (labels[5]) labels[5].textContent = T.label_language;
+    const hints = s1.querySelectorAll('.hint');
+    if (hints[0]) hints[0].textContent = T.hint_tob;
+    setPlaceholder('name', 'ph_name');
+    setPlaceholder('pob', 'ph_pob');
+
+    const infoBox = s1.querySelector('.info-box');
+    if (infoBox && T.privacy_text) infoBox.innerHTML = T.privacy_text;
+  }
+  setButtonText('btnStart', 'btn_generate');
+
+  // Loading / calc screen
+  const sc = document.getElementById('screenCalc');
+  if (sc) {
+    const t = sc.querySelector('div[style*="font-weight:600"]');
+    if (t) t.textContent = T.computing_title;
+    const s = sc.querySelector('div[style*=".83rem"]');
+    if (s) s.innerHTML = T.computing_sub;
+  }
+
+  // Screen 2 — kundli analysis
+  const s2 = document.getElementById('screen2');
+  if (s2) {
+    const ct = s2.querySelector('#lagnaCard .card-title');
+    if (ct) ct.textContent = T.chart_title;
+    const themeLabel = s2.querySelector('#themeBox div:first-child');
+    if (themeLabel) themeLabel.textContent = T.life_theme_label;
+    const hint = s2.querySelector('div[style*=".8rem"][style*="color:var(--muted)"]');
+    if (hint) hint.textContent = T.respond_hint;
+    const backBtn = s2.querySelector('.btn-secondary');
+    if (backBtn) backBtn.textContent = T.btn_back;
+  }
+  setButtonText('btnRefine', 'btn_deep_reading');
+
+  // Calibrating screen
+  const sRef = document.getElementById('screenRefining');
+  if (sRef) {
+    const t = sRef.querySelector('div[style*="font-weight:600"]');
+    if (t) t.textContent = T.calibrating_title;
+    const s = sRef.querySelector('div[style*=".83rem"]');
+    if (s) s.innerHTML = T.calibrating_sub;
+  }
+
+  // Screen 3 — deep reading
+  const s3 = document.getElementById('screen3');
+  if (s3) {
+    const cts = s3.querySelectorAll('.card-title');
+    if (cts[0]) cts[0].textContent = T.reading_title;
+    if (cts[1]) cts[1].textContent = T.planet_cal_title;
+    if (cts[2]) cts[2].textContent = T.save_title;
+    const pActive = s3.querySelector('#planetKnowledgeCard div[style*=".78rem"]');
+    if (pActive) pActive.textContent = T.planet_active_label;
+    const pInactive = s3.querySelector('#pkInactiveRow div');
+    if (pInactive) pInactive.textContent = T.planet_inactive_label;
+    const saveDesc = s3.querySelector('#saveCard div[style*=".83rem"]');
+    if (saveDesc) saveDesc.textContent = T.save_desc;
+    const saveBtn = s3.querySelector('#saveCard .btn-primary');
+    if (saveBtn) saveBtn.textContent = T.btn_save;
+    const askBtn = s3.querySelector('.btn-primary[onclick*="openChat"]');
+    if (askBtn) askBtn.textContent = T.btn_ask_questions;
+    const newBtn = s3.querySelector('.btn-secondary[onclick*="newReading"]');
+    if (newBtn) newBtn.textContent = T.btn_new_reading;
+  }
+
+  // Screen 4 — chat
+  const s4 = document.getElementById('screen4');
+  if (s4) {
+    const ct = s4.querySelector('.card-title');
+    if (ct) ct.textContent = T.chat_title;
+    const desc = s4.querySelector('div[style*=".78rem"]');
+    if (desc) desc.textContent = T.chat_desc;
+    setPlaceholder('chatInput', 'chat_placeholder');
+    const sendBtn = document.getElementById('btnSend');
+    if (sendBtn) sendBtn.textContent = T.btn_send;
+    const newBtn = s4.querySelector('.btn-secondary[onclick*="newReading"]');
+    if (newBtn) newBtn.textContent = T.btn_new_reading;
+  }
+
+  // Wallet modal
+  const wm = document.getElementById('walletModal');
+  if (wm) {
+    const h3 = wm.querySelector('h3');
+    if (h3) h3.textContent = T.wallet_title;
+    // Update balance label text only (don't clobber the whole div)
+    const balLabel = wm.querySelector('div[style*=".82rem"] span:first-child');
+    if (balLabel) balLabel.textContent = T.wallet_balance_label;
+    // Pricing info row — update via openWalletModal-style logic to stay region-aware
+    // (wallet_cost translation is now only a fallback; region-aware values take priority)
+    const t1cred = wm.querySelector('#tier1 .credits');
+    if (t1cred) t1cred.textContent = T.tier1_credits;
+    const t2cred = wm.querySelector('#tier2 .credits');
+    if (t2cred) {
+      const bv = wm.querySelector('#tier2 .credits span');
+      t2cred.innerHTML = T.tier2_credits + ' <span style="color:var(--green);font-size:.75rem">' + T.best_value + '</span>';
+    }
+    const procBtn = document.getElementById('btnTopup');
+    if (procBtn) procBtn.textContent = T.btn_proceed_payment;
+    const cancelBtn = wm.querySelector('.btn-secondary[onclick*="closeWallet"]');
+    if (cancelBtn) cancelBtn.textContent = T.btn_cancel;
+  }
+}
+
+const API = '';
+
+// Fetch with a hard timeout so the UI never hangs indefinitely
+async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') {
+      throw new Error('Request timed out. Please check the server is running and try again.');
+    }
+    throw e;
+  }
+}
+
+let sessionId        = null;
+let corrections      = {};
+let respondedIds     = new Set();
+let currentLanguage  = 'English';
+let currentUser      = null;   // {email, name, wallet_balance, is_guest, region, currency}
+let selectedTier        = 1;   // 1 or 2
+let selectedTierPrice   = 99;
+
+// ════════════════════════════════════════════════════════════════
+// Language selection
+// ════════════════════════════════════════════════════════════════
+function selectLang(lang, el) {
+  currentLanguage = lang;
+  document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  // Sync the dropdown on screen1
+  const sel = document.getElementById('langSelect');
+  if(sel) sel.value = lang;
+  // Apply full UI translations
+  applyTranslations(lang);
+}
+
+// ════════════════════════════════════════════════════════════════
+// Auth tab switching
+// ════════════════════════════════════════════════════════════════
+function switchAuthTab(tab, el) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  hideError('errLogin'); hideError('errRegister');
+}
+
+// ════════════════════════════════════════════════════════════════
+// Auth actions
+// ════════════════════════════════════════════════════════════════
+async function doLogin() {
+  hideError('errLogin');
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw    = document.getElementById('loginPassword').value;
+  if(!email || !pw) return showError('errLogin','Please enter email and password.');
+
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  const _spinL = document.getElementById('spinLogin'); if(_spinL) _spinL.style.display = 'inline-block';
+
+  try {
+    const res  = await fetchWithTimeout(API+'/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pw})
+    });
+    const data = await res.json();
+    if(!res.ok) return showError('errLogin', data.detail || 'Login failed.');
+
+    // Gate on email verification
+    if(!data.email_verified) {
+      window._pendingEmail = data.email || email;
+      document.getElementById('pendingEmail').textContent = window._pendingEmail;
+      window._pendingVerifyEmail = window._pendingEmail;
+      document.getElementById('stepsBar').style.display = 'none';
+      showScreen('screen0v');
+      return;
+    }
+
+    currentUser = {email: data.email, name: data.name,
+                   wallet_balance_cents: data.wallet_balance_cents || 0,
+                   wallet_display: data.wallet_display || '₹0',
+                   region: data.region || 'India',
+                   currency: data.currency || 'INR',
+                   user_type: data.user_type || 'general',
+                   is_guest: false};
+    updateHeaderUser();
+    // Always refresh wallet from server to get the true live balance
+    refreshWalletBalance();
+
+    if(data.has_readings && data.session_id) {
+      sessionId = data.session_id;
+
+      if(data.has_deep_reading && data.refined_analysis) {
+        // ── Returning user with a completed deep reading ──────────────────
+        // Restore the reading and jump straight to the reading screen.
+        renderAnalysis(data.refined_analysis);
+        renderPlanetKnowledge(data.planet_knowledge || {});
+        setStep(3); showScreen('screen3');
+        // Show a welcome-back banner inside screen3
+        showWelcomeBackBanner(data.name);
+      } else {
+        // ── Returning user with chart but no deep reading yet ─────────────
+        // Restore predictions so they can complete the feedback step.
+        renderPredictions(data);
+        setStep(2); showScreen('screen2');
+        document.getElementById('stepsBar').style.display = 'flex';
+      }
+    } else {
+      goToBirthDetails();
+    }
+  } catch(e) {
+    showError('errLogin','Network error: '+e.message);
+  } finally {
+    btn.disabled = false;
+    const _spinLh = document.getElementById('spinLogin'); if(_spinLh) _spinLh.style.display = 'none';
+  }
+}
+
+async function doRegister() {
+  hideError('errRegister');
+  const name  = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pw    = document.getElementById('regPassword').value;
+  const pw2   = document.getElementById('regPassword2').value;
+
+  if(!email || !pw) return showError('errRegister','Email and password are required.');
+  if(pw !== pw2)    return showError('errRegister','Passwords do not match.');
+  if(pw.length < 6) return showError('errRegister','Password must be at least 6 characters.');
+
+  const btn = document.getElementById('btnRegister');
+  btn.disabled = true;
+  const _spinR = document.getElementById('spinRegister'); if(_spinR) _spinR.style.display = 'inline-block';
+
+  try {
+    // Quick connectivity check first
+    try {
+      await fetchWithTimeout(API+'/health', {}, 4000);
+    } catch(e) {
+      throw new Error('Cannot reach server at ' + (location.origin||'localhost:8000') + '. Is it running? (' + e.message + ')');
+    }
+
+    const userType = document.getElementById('regUserType')?.value || 'general';
+    const region   = document.getElementById('regRegion')?.value || 'India';
+    const payload  = {email, password: pw, name, user_type: userType, region};
+    console.log('[Register] POST /auth/register', payload);
+
+    const res  = await fetchWithTimeout(API+'/auth/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    let data = {};
+    try { data = await res.json(); } catch(je) { data = {detail: 'Server returned non-JSON (status '+res.status+')'}; }
+    console.log('[Register] Response', res.status, data);
+
+    if(!res.ok) return showError('errRegister',
+      (data.detail || 'Registration failed.') + ' (HTTP ' + res.status + ')');
+
+    // Show verification pending screen
+    window._pendingEmail = email;
+    window._pendingRegion = region;
+    document.getElementById('pendingEmail').textContent = email;
+    // Update the credit amount shown based on the selected region
+    const creditEl = document.getElementById('pendingCreditAmt');
+    if (creditEl) {
+      creditEl.textContent = (region === 'India') ? '₹100 welcome credit' : '$1.00 welcome credit';
+    }
+    document.getElementById('stepsBar').style.display = 'none';
+    showScreen('screen0v');
+    window._pendingVerifyEmail = email;
+
+  } catch(e) {
+    console.error('[Register] Error:', e);
+    showError('errRegister', e.message);
+  } finally {
+    btn.disabled = false;
+    const _spinRh = document.getElementById('spinRegister'); if(_spinRh) _spinRh.style.display = 'none';
+  }
+}
+
+
+
+function formatCents(c, region) {
+  const r = region || (currentUser && currentUser.region) || 'India';
+  if (r === 'India') {
+    const rupees = c / 100;
+    return '₹' + (rupees === Math.floor(rupees) ? Math.floor(rupees).toLocaleString('en-IN') : rupees.toFixed(2));
+  }
+  return '$' + (c / 100).toFixed(2);
+}
+
+function updateWelcomeCreditInfo() {
+  const region = document.getElementById('regRegion')?.value || 'India';
+  const infoBox = document.getElementById('welcomeCreditInfo');
+  if (!infoBox) return;
+  if (region === 'India') {
+    infoBox.innerHTML = '📧 <strong>Verify your email</strong> to receive <strong>₹100 welcome credit</strong> — enough for your first complete Kundli + Deep Reading.';
+  } else {
+    infoBox.innerHTML = '📧 <strong>Verify your email</strong> to receive <strong>$1.00 welcome credit</strong> — enough for your first complete Kundli + Deep Reading.';
+  }
+}
+
+async function resendVerification() {
+  const email = window._pendingVerifyEmail || '';
+  if(!email) { document.getElementById('resendMsg').textContent='No email on record.'; document.getElementById('resendMsg').style.display='block'; return; }
+  const btn = document.getElementById('btnResend');
+  btn.disabled = true;
+  try {
+    const res = await fetchWithTimeout(API+'/auth/resend-verification', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email})
+    });
+    const d = await res.json();
+    const msg = document.getElementById('resendMsg');
+    msg.textContent = res.ok ? '✅ Verification email resent. Please check your inbox.' : (d.detail || 'Could not resend.');
+    msg.style.color = res.ok ? 'var(--green)' : 'var(--error)';
+    msg.style.display = 'block';
+  } catch(e) {
+    document.getElementById('resendMsg').textContent = 'Network error.';
+    document.getElementById('resendMsg').style.display = 'block';
+  } finally {
+    setTimeout(() => { btn.disabled = false; }, 30000);
+  }
+}
+
+function logout() {
+  currentUser = null; sessionId = null;
+  corrections = {}; respondedIds = new Set();
+  updateHeaderUser();
+  goToAuth();
+}
+
+// ════════════════════════════════════════════════════════════════
+// Navigation
+// ════════════════════════════════════════════════════════════════
+function goToAuth() {
+  document.getElementById('stepsBar').style.display = 'none';
+  showScreen('screen0');
+}
+
+function goToBirthDetails() {
+  document.getElementById('stepsBar').style.display = 'flex';
+  setStep(1); showScreen('screen1');
+  // Sync language select
+  document.getElementById('langSelect').value = currentLanguage;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setStep(n) {
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('st'+i);
+    el.classList.remove('active','done');
+    if(i < n)      el.classList.add('done');
+    else if(i===n) el.classList.add('active');
+  });
+}
+
+async function refreshWalletBalance() {
+  if (!currentUser || currentUser.is_guest) return;
+  try {
+    const r = await fetchWithTimeout(API + '/wallet/balance?email=' + encodeURIComponent(currentUser.email), {}, 5000);
+    if (r.ok) {
+      const d = await r.json();
+      currentUser.wallet_balance_cents = d.balance_cents || 0;
+      currentUser.wallet_display = d.balance_display || formatCents(currentUser.wallet_balance_cents);
+      if (d.region) currentUser.region   = d.region;
+      if (d.currency) currentUser.currency = d.currency;
+      document.getElementById('walletAmt').textContent = currentUser.wallet_display;
+      // Also update modal if open
+      const mb = document.getElementById('modalBalance');
+      if (mb) mb.textContent = currentUser.wallet_display;
+    }
+  } catch(e) { /* silent — header already shows login-time value */ }
+}
+
+function updateHeaderUser() {
+  const wb  = document.getElementById('walletBadge');
+  const ub  = document.getElementById('userBadge');
+  const hb  = document.getElementById('btnHistory');
+  if(currentUser && !currentUser.is_guest) {
+    wb.style.display  = 'inline-flex';
+    ub.style.display  = 'inline-flex';
+    if(hb) hb.style.display = 'inline-block';
+    document.getElementById('walletAmt').textContent     = currentUser.wallet_display || (currentUser.region === 'International' ? '$0.00' : '₹0');
+    document.getElementById('userNameBadge').textContent = currentUser.name || currentUser.email.split('@')[0];
+  } else if(currentUser && currentUser.is_guest) {
+    wb.style.display  = 'none';
+    ub.style.display  = 'inline-flex';
+    if(hb) hb.style.display = 'none';
+    document.getElementById('userNameBadge').textContent = 'Guest';
+  } else {
+    wb.style.display  = 'none';
+    ub.style.display  = 'none';
+    if(hb) hb.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Step 1 — Start reading
+// ════════════════════════════════════════════════════════════════
+async function startReading() {
+  hideError('err1');
+  const dob  = document.getElementById('dob').value;
+  const tob  = document.getElementById('tob').value;
+  const pob  = document.getElementById('pob').value.trim();
+  if(!dob || !tob || !pob)
+    return showError('err1','Please fill in Date of Birth, Time of Birth, and Place of Birth.');
+
+  const name   = document.getElementById('name').value.trim();
+  const marital= '';
+  const lang   = document.getElementById('langSelect').value || currentLanguage;
+  currentLanguage = lang;
+  // Refresh wallet display
+  if(currentUser && currentUser.wallet_display) {
+    document.getElementById('walletAmt').textContent = currentUser.wallet_display;
+  }
+
+  const email = (currentUser && !currentUser.is_guest) ? currentUser.email : null;
+
+  const btn = document.getElementById('btnStart');
+  btn.disabled = true;
+  const _spinS = document.getElementById('spinnerStart'); if(_spinS) _spinS.style.display = 'inline-block';
+  showScreen('screenCalc'); setStep(2);
+
+  try {
+    // 90s timeout: first-time geocoding + planetary calc + AI predictions can be slow
+    const res = await fetchWithTimeout(API+'/kundli/start', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        date_of_birth: dob, time_of_birth: tob, place_of_birth: pob,
+        name, email, marital_status: marital, language: lang
+      })
+    }, 90000);
+    if(!res.ok) {
+      const err = await res.json();
+      showScreen('screen1');
+      if(res.status === 402) {
+        // Insufficient balance
+        showError('err1', err.detail);
+        openWalletModal();
+      } else {
+        showError('err1', err.detail || 'Server error. Please try again.');
+      }
+      return;
+    }
+    const data = await res.json();
+    sessionId = data.session_id;
+
+    // Update wallet balance if returned
+    if(currentUser && data.wallet_balance_cents !== undefined) {
+      currentUser.wallet_balance_cents = data.wallet_balance_cents;
+      currentUser.wallet_display = data.wallet_display || formatCents(data.wallet_balance_cents);
+      document.getElementById('walletAmt').textContent = currentUser.wallet_display;
+    }
+
+    renderPredictions(data);
+    setStep(2); showScreen('screen2');
+
+    if(email) document.getElementById('saveEmail').value = email;
+    else       document.getElementById('saveCard').style.display = 'block';
+
+  } catch(e) {
+    showScreen('screen1');
+    const msg = e.name === 'AbortError' || (e.message||'').includes('timed out')
+      ? 'Kundli generation timed out. The server is still computing — please try again in a moment.'
+      : 'Network error: ' + e.message;
+    showError('err1', msg);
+  } finally {
+    btn.disabled = false;
+    const _spinSh = document.getElementById('spinnerStart'); if(_spinSh) _spinSh.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Render predictions (Step 2 — Kundli Analysis)
+// ════════════════════════════════════════════════════════════════
+function renderPredictions(data) {
+  const l = data.lagna || {};
+  if(l.rasi) {
+    document.getElementById('lagnaRow').innerHTML =
+      `<div class="lagna-chip">Lagna: <span>${l.rasi}</span></div>` +
+      `<div class="lagna-chip">Nakshatra: <span>${l.nakshatra||'—'}</span></div>` +
+      `<div class="lagna-chip">Pada: <span>${l.nakshatra_pada||'—'}</span></div>` +
+      `<div class="lagna-chip">Degree: <span>${l.degree_str||'—'}</span></div>`;
+  }
+  if(data.overall_theme && !data._parse_error) {
+    document.getElementById('themeText').textContent = data.overall_theme;
+    document.getElementById('themeBox').style.display = 'block';
+  }
+
+  const preds = data.predictions || [];
+  const container = document.getElementById('predictionsContainer');
+  container.innerHTML = '';
+  corrections = {}; respondedIds = new Set();
+
+  if(!preds.length) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:24px;color:var(--muted)">
+        <div style="font-size:1.5rem;margin-bottom:8px">⚠️</div>
+        <div style="font-weight:600;margin-bottom:6px">Predictions could not be generated</div>
+        <div style="font-size:.82rem">Analysis could not be parsed. Please click <strong>New Reading</strong> below and try again.</div>
+        ${data._raw ? `<details style="margin-top:12px;text-align:left">
+          <summary style="font-size:.75rem;cursor:pointer;color:var(--muted)">Technical details</summary>
+          <pre style="font-size:.68rem;overflow:auto;max-height:120px;margin-top:6px;
+            background:#f5f5f5;padding:8px;border-radius:6px">${escHtml((data._raw||'').substring(0,300))}</pre>
+        </details>` : ''}
+      </div>`;
+    document.getElementById('btnRefine').disabled = true;
+    updateProgress();
+    return;
+  }
+
+  preds.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'pred-card'; div.id = 'pc_'+p.id;
+    div.innerHTML = `
+      <div class="pred-header">
+        <span class="pred-emoji">${p.emoji||'🔮'}</span>
+        <span class="pred-cat">${p.category||p.id}</span>
+      </div>
+      <div class="pred-statement">${escHtml(p.statement||'')}</div>
+      <div class="pred-question">❓ ${escHtml(p.question||'')}</div>
+      <div class="pred-actions" id="pa_${p.id}">
+        <button class="btn btn-confirm btn-sm" onclick="confirmPred('${p.id}')">${(TRANSLATIONS[currentLanguage]||TRANSLATIONS['English']).pred_yes}</button>
+        <button class="btn btn-correct btn-sm" onclick="showCorrection('${p.id}')">${(TRANSLATIONS[currentLanguage]||TRANSLATIONS['English']).pred_clarify}</button>
+      </div>
+      <div class="correction-row" id="cr_${p.id}">
+        <input type="text" id="ci_${p.id}" placeholder="${(TRANSLATIONS[currentLanguage]||TRANSLATIONS['English']).pred_correction_ph}"
+               onkeydown="if(event.key==='Enter')submitCorrection('${p.id}')"/>
+        <button class="btn btn-primary btn-sm" onclick="submitCorrection('${p.id}')">${(TRANSLATIONS[currentLanguage]||TRANSLATIONS['English']).pred_save_correction}</button>
+      </div>`;
+    container.appendChild(div);
+  });
+  updateProgress();
+}
+
+function confirmPred(id) {
+  corrections[id] = 'Confirmed — yes, this is accurate';
+  respondedIds.add(id);
+  const card = document.getElementById('pc_'+id);
+  card.classList.add('confirmed');
+  document.getElementById('pa_'+id).innerHTML =
+    '<span style="color:var(--green);font-size:.8rem;font-weight:600">✅ Confirmed</span>';
+  document.getElementById('cr_'+id).classList.remove('show');
+  updateProgress();
+}
+function showCorrection(id) {
+  document.getElementById('cr_'+id).classList.add('show');
+  document.getElementById('ci_'+id).focus();
+}
+function submitCorrection(id) {
+  const val = document.getElementById('ci_'+id).value.trim();
+  if(!val) return;
+  corrections[id] = val; respondedIds.add(id);
+  document.getElementById('pc_'+id).classList.add('corrected');
+  document.getElementById('pa_'+id).innerHTML =
+    `<span style="color:var(--blue);font-size:.8rem;font-weight:600">✏️ "${escHtml(val.substring(0,50))}"</span>`;
+  document.getElementById('cr_'+id).classList.remove('show');
+  updateProgress();
+}
+function updateProgress() {
+  const total = document.querySelectorAll('[id^="pc_"]').length;
+  const done  = respondedIds.size;
+  document.getElementById('progressText').textContent = done+' / '+total;
+  document.getElementById('progressFill').style.width = Math.round(done/Math.max(total,1)*100)+'%';
+  const btn = document.getElementById('btnRefine');
+  if(btn) {
+    btn.disabled = done === 0 || total === 0;
+    btn.textContent = done < total
+      ? `✨ Get Deep Reading (${done}/${total} answered)`
+      : '✨ Get My Personalised Deep Reading →';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Step 2→3: Refine
+// ════════════════════════════════════════════════════════════════
+async function refineReading() {
+  hideError('err2');
+  showScreen('screenRefining'); setStep(3);
+  const email  = (currentUser && !currentUser.is_guest) ? currentUser.email : null;
+  const marital= '';
+
+  // ── Streaming fetch via Server-Sent Events ────────────────────────
+  // We stream Claude's response chunk-by-chunk so the browser never
+  // times out, no matter how long the deep reading takes.
+  let fullText = '';
+  let controller = null;
+
+  try {
+    controller = new AbortController();
+    const res = await fetch(API+'/kundli/refine/'+sessionId, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({corrections, email, marital_status: marital, language: currentLanguage}),
+      signal:  controller.signal,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({detail: 'Server error.'}));
+      showScreen('screen2');
+      showError('err2', err.detail || 'Server error.');
+      return;
+    }
+
+    // Switch to the reading screen early so the user sees text appearing
+    showScreen('screen3'); setStep(3);
+    document.getElementById('analysisText').innerHTML =
+      '<p style="color:#888;font-style:italic">✨ Your reading is being generated…</p>';
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      // SSE lines end with \n\n; process complete events
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop();            // keep any incomplete trailing fragment
+
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith('data:')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(5).trim()); }
+        catch { continue; }
+
+        if (evt.chunk !== undefined) {
+          // Incremental text — append and re-render
+          fullText += evt.chunk;
+          renderAnalysis(fullText);
+
+        } else if (evt.done) {
+          // Final event — show planet knowledge + update wallet
+          renderPlanetKnowledge(evt.planet_knowledge || {});
+          if (currentUser && evt.wallet_balance_cents !== undefined) {
+            currentUser.wallet_balance_cents = evt.wallet_balance_cents;
+            const el = document.getElementById('walletBal');
+            if (el) el.textContent = evt.wallet_display || '';
+          }
+
+        } else if (evt.error) {
+          // Server-side error during streaming
+          showScreen('screen2');
+          let msg = evt.error;
+          if (evt.refunded) {
+            msg += ' Your wallet has been refunded (' + (evt.refunded_display || '') + ').';
+          }
+          showError('err2', msg + ' You can try again — your chart data is preserved.');
+          // Show retry button
+          let btn = document.getElementById('btnRefineRetry');
+          if (!btn) {
+            btn = document.createElement('button');
+            btn.id = 'btnRefineRetry';
+            btn.className = 'btn btn-primary';
+            btn.style.cssText = 'margin-top:12px;';
+            btn.textContent = '🔄 Try Again — Get My Deep Reading';
+            btn.onclick = refineReading;
+            const errEl = document.getElementById('err2');
+            if (errEl && errEl.parentNode) errEl.parentNode.insertBefore(btn, errEl.nextSibling);
+          }
+          btn.style.display = 'inline-block';
+          return;
+        }
+      }
+    }
+
+  } catch(e) {
+    if (controller) controller.abort();
+    showScreen('screen2');
+    showError('err2',
+      'Connection interrupted: ' + e.message +
+      '. Your chart data is saved — please try again below.');
+    let btn = document.getElementById('btnRefineRetry');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'btnRefineRetry'; btn.className = 'btn btn-primary';
+      btn.style.cssText = 'margin-top:12px;';
+      btn.textContent = '🔄 Try Again — Get My Deep Reading';
+      btn.onclick = refineReading;
+      const errEl = document.getElementById('err2');
+      if (errEl && errEl.parentNode) errEl.parentNode.insertBefore(btn, errEl.nextSibling);
+    }
+    btn.style.display = 'inline-block';
+  }
+}
+
+async function emailReport() {
+  if (!currentUser || currentUser.is_guest) {
+    alert('Please log in to email your report.');
+    return;
+  }
+  // Disable both buttons while sending
+  ['btnEmailReport3','btnEmailReport4'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) { b.disabled = true; b.textContent = '⏳ Sending…'; }
+  });
+  try {
+    const res = await fetchWithTimeout(API + '/user/email-report', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email: currentUser.email, session_id: sessionId || ''})
+    }, 15000);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert('✅ Your reading report has been emailed to ' + currentUser.email +
+            '.\nPlease check your inbox (and spam folder).');
+    } else {
+      alert('❌ ' + (data.detail || 'Could not send report. Please try again.'));
+    }
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    ['btnEmailReport3','btnEmailReport4'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.disabled = false; b.textContent = '📧 Email My Report'; }
+    });
+  }
+}
+
+function showWelcomeBackBanner(name) {
+  const banner = document.getElementById('welcomeBackBanner');
+  if (!banner) return;
+  document.getElementById('wbName').textContent = name || 'friend';
+  banner.style.display = 'flex';
+}
+
+function renderAnalysis(text) {
+  const paras = text.split(/\n{2,}/).filter(p => p.trim());
+  document.getElementById('analysisText').innerHTML =
+    paras.map(p => `<p>${escHtml(p.trim())}</p>`).join('');
+}
+
+function renderPlanetKnowledge(pk) {
+  const active   = pk.active   || [];
+  const inactive = pk.inactive || [];
+  if(!active.length && !inactive.length) return;
+  document.getElementById('planetKnowledgeCard').style.display = 'block';
+  document.getElementById('pkActive').innerHTML = active.map(s =>
+    `<span class="pk-pill active">✓ ${escHtml(s.planet)} <small>(${escHtml(s.domain)})</small></span>`
+  ).join('');
+  if(inactive.length) {
+    document.getElementById('pkInactiveRow').style.display = 'block';
+    document.getElementById('pkInactive').innerHTML = inactive.map(s =>
+      `<span class="pk-pill inactive">? ${escHtml(s.planet)} <small>(${escHtml(s.domain)})</small></span>`
+    ).join('');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Step 3→4: Chat
+// ════════════════════════════════════════════════════════════════
+function openChat() {
+  setStep(4); showScreen('screen4');
+  const box = document.getElementById('chatBox');
+  if(!box.innerHTML.trim()) {
+    addMsg('assistant',
+      '🙏 Namaste! Your personalised reading is ready.\n\n'+
+      'I now have a deep understanding of your birth chart and the planets that are active for you. '+
+      'Ask me anything — career, relationships, health, upcoming events, remedies, or spiritual guidance.');
+  }
+  document.getElementById('chatInput').focus();
+}
+function skipToChat() { openChat(); }
+
+function addMsg(role, text) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'msg '+role;
+  div.innerHTML = `<div class="sender">${role==='user'?'👤 You':'🔮 Jyotish AI'}</div>`+
+    `<div class="bubble">${escHtml(text)}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChat() {
+  hideError('err4');
+  const inp = document.getElementById('chatInput');
+  const msg = inp.value.trim();
+  if(!msg) return;
+  inp.value = '';
+  addMsg('user', msg);
+  const btn = document.getElementById('btnSend');
+  btn.disabled = true;
+
+  const typing = document.createElement('div');
+  typing.className = 'msg assistant'; typing.id = 'typing';
+  typing.innerHTML = '<div class="sender">🔮 Jyotish AI</div>'+
+    '<div class="bubble" style="color:var(--muted);font-style:italic">Contemplating…</div>';
+  document.getElementById('chatBox').appendChild(typing);
+  document.getElementById('chatBox').scrollTop = 99999;
+
+  try {
+    // 60s timeout: chat responses from Claude can take 20-45s
+    const res = await fetchWithTimeout(API+'/kundli/chat/'+sessionId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:msg, language:currentLanguage})
+    }, 60000);
+    document.getElementById('typing')?.remove();
+    if(!res.ok) {
+      const err = await res.json();
+      return showError('err4', err.detail||'Error. Please try again.');
+    }
+    const data = await res.json();
+    addMsg('assistant', data.response);
+  } catch(e) {
+    document.getElementById('typing')?.remove();
+    showError('err4','Network error: '+e.message);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('chatInput').focus();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Save reading
+// ════════════════════════════════════════════════════════════════
+async function saveReading() {
+  const email = document.getElementById('saveEmail').value.trim();
+  const msg   = document.getElementById('saveMsg');
+  if(!email) { msg.textContent='Please enter your email.'; msg.style.display='block'; return; }
+  if(!sessionId) { msg.textContent='No session to save.'; msg.style.display='block'; return; }
+  try {
+    const res  = await fetchWithTimeout(API+'/user/save', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, session_id:sessionId,
+                             name: document.getElementById('name').value.trim()})
+    });
+    const data = await res.json();
+    if(data.saved) {
+      msg.textContent = '✅ Saved! Use your email next time to reload instantly.';
+      msg.style.color = 'var(--green)'; msg.style.display = 'block';
+      setTimeout(() => { document.getElementById('saveCard').style.display='none'; }, 3500);
+    }
+  } catch(e) {
+    msg.textContent = 'Save failed: '+e.message;
+    msg.style.color = 'var(--red)'; msg.style.display = 'block';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Wallet modal
+// ════════════════════════════════════════════════════════════════
+function openWalletModal() {
+  const balDisplay = (currentUser && currentUser.wallet_display) || '₹0';
+  document.getElementById('modalBalance').textContent = balDisplay;
+
+  // Update pricing info and tiers based on region
+  const region = (currentUser && currentUser.region) || 'India';
+  if (region === 'India') {
+    // Pricing info bar
+    const rCost = document.getElementById('modalReadingCost');
+    const cCost = document.getElementById('modalChatCost');
+    if (rCost) rCost.textContent = '₹100';
+    if (cCost) cCost.textContent = '₹25';
+    // Tier 1
+    document.getElementById('tier1Price').textContent = '₹99';
+    document.getElementById('tier1Desc').innerHTML   = 'Get ₹110 credit <span style="color:var(--green);font-size:.75rem">~10% bonus</span>';
+    // Tier 2
+    document.getElementById('tier2Price').textContent = '₹249';
+    document.getElementById('tier2Desc').innerHTML   = 'Get ₹300 credit <span style="color:var(--green);font-size:.75rem">₹51 gift — Best value</span>';
+  } else {
+    // International USD
+    const rCost = document.getElementById('modalReadingCost');
+    const cCost = document.getElementById('modalChatCost');
+    if (rCost) rCost.textContent = '$1.00';
+    if (cCost) cCost.textContent = '$1.00';
+    // Tier 1
+    document.getElementById('tier1Price').textContent = '$10';
+    document.getElementById('tier1Desc').innerHTML   = 'Get $11 credit <span style="color:var(--green);font-size:.75rem">$1 bonus</span>';
+    // Tier 2
+    document.getElementById('tier2Price').textContent = '$25';
+    document.getElementById('tier2Desc').innerHTML   = 'Get $30 credit <span style="color:var(--green);font-size:.75rem">$5 gift — Best value</span>';
+  }
+
+  // Reset tier selection to tier 1 (selected by default)
+  selectTier(1, document.getElementById('tier1'));
+
+  document.getElementById('walletModal').classList.add('show');
+  // Auto-load transactions
+  loadTransactions();
+}
+function closeWalletModal() {
+  document.getElementById('walletModal').classList.remove('show');
+}
+
+async function loadTransactions() {
+  if (!currentUser || currentUser.is_guest) return;
+  const container = document.getElementById('txnList');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:8px">Loading…</div>';
+  try {
+    const res = await fetchWithTimeout(
+      API + '/wallet/transactions?email=' + encodeURIComponent(currentUser.email), {}, 8000
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const txns = data.transactions || [];
+    if (txns.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:10px">No transactions yet.</div>';
+      return;
+    }
+    // Build table
+    let html = '<table style="width:100%;border-collapse:collapse">';
+    html += '<thead><tr style="border-bottom:1px solid var(--border);color:var(--muted)">'
+          + '<th style="text-align:left;padding:4px 6px;font-weight:600">Date</th>'
+          + '<th style="text-align:left;padding:4px 6px;font-weight:600">Description</th>'
+          + '<th style="text-align:right;padding:4px 6px;font-weight:600">Amount</th>'
+          + '<th style="text-align:right;padding:4px 6px;font-weight:600">Balance</th>'
+          + '</tr></thead><tbody>';
+    txns.forEach(function(t) {
+      const isCredit = (t.sign === '+') || (t.type === 'credit');
+      const amtColor = isCredit ? 'var(--green)' : 'var(--error)';
+      const amtPrefix = isCredit ? '+' : '-';
+      // backend returns amount as a formatted string (e.g. "₹100" or "$1.00")
+      const amtStr = t.amount || '';
+      html += '<tr style="border-bottom:1px solid var(--border)">'
+            + '<td style="padding:5px 6px;white-space:nowrap;color:var(--muted)">' + (t.date || '') + '</td>'
+            + '<td style="padding:5px 6px">' + (t.label || t.reason || '') + '</td>'
+            + '<td style="padding:5px 6px;text-align:right;color:' + amtColor + ';font-weight:600">'
+            + amtPrefix + amtStr + '</td>'
+            + '<td style="padding:5px 6px;text-align:right;font-weight:600">' + (t.balance || '') + '</td>'
+            + '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--error);padding:8px">Could not load transactions.</div>';
+  }
+}
+
+function selectTier(tier, el) {
+  document.querySelectorAll('.credit-tier').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTier = tier;
+  const region = (currentUser && currentUser.region) || 'India';
+  if (region === 'India') {
+    selectedTierPrice = tier === 1 ? 99 : 249;
+  } else {
+    selectedTierPrice = tier === 1 ? 10 : 25;
+  }
+}
+let _activePayTab = 'upi';
+// Tier display amounts are set dynamically by openWalletModal based on region
+const _tierAmounts = { 1: '\u20b999', 2: '\u20b9249' }; // legacy fallback
+
+function showPaymentForm() {
+  if(!currentUser || currentUser.is_guest) {
+    document.getElementById('topupMsg').textContent='Please login to top up your wallet.';
+    document.getElementById('topupMsg').style.display='block'; return;
+  }
+  const region = (currentUser && currentUser.region) || 'India';
+  let amt;
+  if (region === 'India') {
+    amt = selectedTier === 1 ? '\u20b999' : '\u20b9249';
+  } else {
+    amt = selectedTier === 1 ? '$10' : '$25';
+  }
+  document.getElementById('payAmtDisplay').textContent = amt;
+  document.getElementById('payBtnAmt').textContent     = amt;
+  document.getElementById('payErr').style.display      = 'none';
+  document.getElementById('payProcessing').style.display = 'none';
+  document.getElementById('payBtnRow').style.display   = 'flex';
+  ['upiId','cardNum','cardExp','cardCVV'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  const nb = document.getElementById('nbBank'); if(nb) nb.selectedIndex = 0;
+  switchPayTab('upi');
+  document.getElementById('paymentModal').classList.add('show');
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.remove('show');
+}
+
+function switchPayTab(tab) {
+  _activePayTab = tab;
+  document.getElementById('panelUPI').style.display  = tab==='upi'  ? 'block' : 'none';
+  document.getElementById('panelCard').style.display = tab==='card' ? 'block' : 'none';
+  document.getElementById('panelNB').style.display   = tab==='nb'   ? 'block' : 'none';
+  document.getElementById('tabUPI').classList.toggle('active',  tab==='upi');
+  document.getElementById('tabCard').classList.toggle('active', tab==='card');
+  document.getElementById('tabNB').classList.toggle('active',   tab==='nb');
+}
+
+function fmtCard(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,16);
+  el.value = v.replace(/(.{4})/g,'$1 ').trim();
+}
+function fmtExpiry(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,4);
+  if(v.length >= 3) v = v.substring(0,2) + ' / ' + v.substring(2);
+  el.value = v;
+}
+
+function _validatePaymentForm() {
+  const err = document.getElementById('payErr');
+  err.style.display = 'none';
+  if(_activePayTab === 'upi') {
+    const uid = (document.getElementById('upiId').value||'').trim();
+    if(!uid || !uid.includes('@')) { err.textContent='Please enter a valid UPI ID (e.g. name@upi)'; err.style.display='block'; return false; }
+  } else if(_activePayTab === 'card') {
+    const num = (document.getElementById('cardNum').value||'').replace(/\s/g,'');
+    const exp = (document.getElementById('cardExp').value||'').trim();
+    const cvv = (document.getElementById('cardCVV').value||'').trim();
+    if(num.length < 16) { err.textContent='Please enter a valid 16-digit card number'; err.style.display='block'; return false; }
+    if(!exp.includes('/') || exp.replace(/\s/g,'').length < 5) { err.textContent='Please enter a valid expiry (MM/YY)'; err.style.display='block'; return false; }
+    if(cvv.length < 3) { err.textContent='Please enter your CVV'; err.style.display='block'; return false; }
+  } else if(_activePayTab === 'nb') {
+    const bank = document.getElementById('nbBank').value;
+    if(!bank) { err.textContent='Please select your bank'; err.style.display='block'; return false; }
+  }
+  return true;
+}
+
+async function submitMockPayment() {
+  if(!_validatePaymentForm()) return;
+  document.getElementById('payBtnRow').style.display    = 'none';
+  document.getElementById('payProcessing').style.display = 'block';
+  document.getElementById('payErr').style.display        = 'none';
+  const delay = 1500 + Math.random() * 1000;
+  await new Promise(r => setTimeout(r, delay));
+  try {
+    const orderRes = await fetchWithTimeout(API+'/wallet/topup/order', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email:currentUser.email, tier:selectedTier})
+    });
+    if(!orderRes.ok) throw new Error('Order creation failed');
+    const order = await orderRes.json();
+    const vRes = await fetchWithTimeout(API+'/wallet/topup/verify', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email:currentUser.email, tier:selectedTier, payment_data:{mock:order.mock||true,order_id:order.order_id}})
+    });
+    if(!vRes.ok) throw new Error('Payment verification failed');
+    const vData = await vRes.json();
+    if(vData.success) {
+      currentUser.wallet_balance_cents = vData.new_balance_cents;
+      currentUser.wallet_display = vData.new_balance_display;
+      document.getElementById('walletAmt').textContent    = vData.new_balance_display;
+      document.getElementById('modalBalance').textContent = vData.new_balance_display;
+      const rdgs = 

@@ -1,0 +1,25 @@
+{
+  "name": "narayan-astro-reader-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NarayanAstroReader — React 18 + Vite SPA front-end",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "vite": "^5.2.12"
+  }
+}

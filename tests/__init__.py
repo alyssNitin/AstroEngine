@@ -1,0 +1,1 @@
+# NarayanAstroReader test suite

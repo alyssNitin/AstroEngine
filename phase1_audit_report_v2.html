@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase-1 Compliance Audit v2 — NarayanAstroReader</title>
+<style>
+  :root {
+    --bg: #0f1117; --card: #1a1d27; --border: #2a2d3e;
+    --green: #22c55e; --yellow: #f59e0b; --red: #ef4444; --blue: #60a5fa;
+    --purple: #a78bfa; --text: #e2e8f0; --muted: #64748b;
+    --green-bg: rgba(34,197,94,.1); --yellow-bg: rgba(245,158,11,.1);
+    --red-bg: rgba(239,68,68,.1); --blue-bg: rgba(96,165,250,.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); padding: 32px 16px; }
+  .page { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.9rem; color: var(--purple); margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 32px; }
+  h2 { font-size: 1.15rem; color: var(--blue); margin: 32px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 1rem; color: var(--purple); margin: 20px 0 8px; }
+
+  /* Summary scorecard */
+  .scorecard { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 32px; }
+  .score-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; flex: 1; min-width: 160px; text-align: center; }
+  .score-card .big { font-size: 2.2rem; font-weight: 700; line-height: 1; }
+  .score-card .lbl { font-size: .78rem; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .g { color: var(--green); } .y { color: var(--yellow); } .r { color: var(--red); }
+
+  /* Section cards */
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+  .section-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .section-header h3 { margin: 0; font-size: .95rem; }
+  .section-header .badge { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .badge-pass { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .badge-partial { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
+  .badge-fail { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+  .badge-info { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue); }
+  .section-body { padding: 16px 20px; }
+
+  /* Requirement rows */
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: rgba(255,255,255,.02); }
+
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+  .chip-pass { background: var(--green-bg); color: var(--green); }
+  .chip-partial { background: var(--yellow-bg); color: var(--yellow); }
+  .chip-fail { background: var(--red-bg); color: var(--red); }
+  .chip-na { background: rgba(100,116,139,.15); color: var(--muted); }
+
+  .note { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+  .arch-gap { background: rgba(239,68,68,.06); border-left: 3px solid var(--red); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 10px; font-size: .875rem; }
+  .arch-ok  { background: rgba(34,197,94,.06);  border-left: 3px solid var(--green); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 10px; font-size: .875rem; }
+  .arch-partial { background: rgba(245,158,11,.06); border-left: 3px solid var(--yellow); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 10px; font-size: .875rem; }
+  .bold { font-weight: 600; color: var(--text); }
+
+  .priority-tag { font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .p-crit { background: rgba(239,68,68,.2); color: var(--red); }
+  .p-high { background: rgba(245,158,11,.2); color: var(--yellow); }
+  .p-med  { background: rgba(96,165,250,.2); color: var(--blue); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; font-size: .8rem; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  footer { text-align: center; color: var(--muted); font-size: .75rem; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>⭐ NarayanAstroReader — Phase-1 Compliance Audit</h1>
+<div class="subtitle">Audit Date: May 7 2026 &nbsp;|&nbsp; Audited against: Phase1_AI_Core_SRS.docx v1.0 &nbsp;|&nbsp; Architecture: design_architecture.html</div>
+
+<!-- ── SCORECARD ─────────────────────────────────────────────────────────── -->
+<div class="scorecard">
+  <div class="score-card"><div class="big g">23</div><div class="lbl">✅ Fully Implemented</div></div>
+  <div class="score-card"><div class="big y">12</div><div class="lbl">⚠️ Partial / Gaps</div></div>
+  <div class="score-card"><div class="big r">18</div><div class="lbl">❌ Not Implemented</div></div>
+  <div class="score-card"><div class="big" style="color:var(--purple)">53</div><div class="lbl">Total Requirements</div></div>
+  <div class="score-card"><div class="big y">43%</div><div class="lbl">Phase-1 Complete</div></div>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--green)"></span> Fully implemented &amp; verified in code</span>
+  <span><span class="dot" style="background:var(--yellow)"></span> Partially implemented — code present but gaps remain</span>
+  <span><span class="dot" style="background:var(--red)"></span> Not implemented — no code found</span>
+  <span class="priority-tag p-crit">CRIT</span> Must fix before launch &nbsp;
+  <span class="priority-tag p-high">HIGH</span> High priority &nbsp;
+  <span class="priority-tag p-med">MED</span> Medium priority
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>Section 1 — Functional Requirements</h2>
+
+<!-- FR 3.1 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 3.1 — User Onboarding &amp; Profile Management</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Email/password registration with email verification</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /auth/register</code> → verification email sent; <code>GET /auth/verify-email</code> credits wallet on success</td>
+      </tr>
+      <tr>
+        <td>Login with email/password + JWT token</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /auth/login</code> returns JWT; <code>backend/auth/jwt_utils.py</code> signs HS256 tokens</td>
+      </tr>
+      <tr>
+        <td>Guest (anonymous) session</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /auth/guest</code>; guest chat limited by <code>_guest_chat_counts</code></td>
+      </tr>
+      <tr>
+        <td>Forgot / reset password</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /auth/forgot-password</code> &amp; <code>POST /auth/reset-password</code> with token validation</td>
+      </tr>
+      <tr>
+        <td>Resend verification email</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /auth/resend-verification</code> with rate-limit guard (1/hr)</td>
+      </tr>
+      <tr>
+        <td>Language selection at registration</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>preferred_language</code> persisted in <code>users</code> table; English/Hindi/Tamil options shown</td>
+      </tr>
+      <tr>
+        <td>Social OAuth (Google, Apple) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No OAuth routes or library found. SRS FR 3.1.1 explicitly requires Google and Apple login.</td>
+      </tr>
+      <tr>
+        <td>Two-factor authentication (2FA) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No TOTP/OTP code. SRS FR 3.1.1 requires 2FA support. NFR 5.7.5 makes it mandatory for admin.</td>
+      </tr>
+      <tr>
+        <td>Multiple Kundli profiles per user (self, family, clients)</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Database has one profile per email. SRS FR 3.1.2 requires saving multiple named profiles. No <code>kundli_profiles</code> table exists.</td>
+      </tr>
+      <tr>
+        <td>Professional astrologer role + client list dashboard</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No <code>role</code> column, no astrologer-specific UI or client management endpoints.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 3.2 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 3.2 — Kundli Generation Engine</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Nirayan (Sidereal) chart via Swiss Ephemeris / PyJHora</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>backend/kundli_engine/engine.py</code> delegates to PyJHora; Lahiri Ayanamsa applied</td>
+      </tr>
+      <tr>
+        <td>Lagna, all 9 planets + Rahu/Ketu positions</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>Returned in PyJHora output; stub confirms expected keys</td>
+      </tr>
+      <tr>
+        <td>Divisional charts D2/D3/D7/D9/D10/D16</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>D9 Navamsa and D10 Dashamsa present in stub output. Full set (D2 Hora, D3 Dreshkana, D7 Saptamsa, D16 Shodashamsa) not verified in PyJHora integration layer. No UI display of divisional charts.</td>
+      </tr>
+      <tr>
+        <td>House lordships, occupants, aspects</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Passed as raw lagna_info JSON to AI — not surfaced as structured house-by-house display in UI.</td>
+      </tr>
+      <tr>
+        <td>Yoga detection (Raj, Dhana, Kemdrum, Vipreet etc.) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Stub returns one yoga type ("Siddha"). Full yoga list from SRS not implemented. AI may reference yogas from raw chart data, but no explicit engine-level yoga detection.</td>
+      </tr>
+      <tr>
+        <td>Shadbala (six-fold planetary strength) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No Shadbala computation found in engine or output. SRS FR 3.2.2 requires this explicitly.</td>
+      </tr>
+      <tr>
+        <td>Ashtakavarga (eight-source benefic points) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No Ashtakavarga found. SRS FR 3.2.2 requires this explicitly.</td>
+      </tr>
+      <tr>
+        <td>North Indian + South Indian chart style display</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Frontend has no chart rendering (SVG/canvas). Raw text/JSON displayed only. SRS FR 3.2.1 requires both chart style options in UI.</td>
+      </tr>
+      <tr>
+        <td>Ayanamsa configurable (Lahiri / Raman / KP)</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Lahiri used by default via PyJHora. No UI option to switch Ayanamsa for power users.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 3.3 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 3.3 — Dasha System Engine</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Vimshottari Dasha (120 yr) — Mahadasha + Antardasha</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>services/dasha-engine/src/systems/vimshottari.py</code>; <code>AbstractDashaSystem</code> base; <code>GET /dasha/{session_id}</code> endpoint</td>
+      </tr>
+      <tr>
+        <td>Current active Dasha highlighted + AI narrative</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>get_current()</code> on VimshottariDasha; <code>POST /dasha/{session_id}/narrative</code> generates AI text</td>
+      </tr>
+      <tr>
+        <td>Pluggable Dasha architecture</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>AbstractDashaSystem</code> ABC; registry in <code>systems/__init__.py</code>; new systems need only subclass &amp; register</td>
+      </tr>
+      <tr>
+        <td>Pratyantardasha (sub-sub period) + Sookshma Dasha <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td><code>depth</code> param supports up to 5 levels but only tested to depth=2 (Antardasha). Pratyantara/Sookshma parsing depends on PyJHora output format.</td>
+      </tr>
+      <tr>
+        <td>Yogini Dasha (36 yr) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Registered as <code># TODO Phase 1-C</code> in <code>systems/__init__.py</code>. SRS requires all 6 systems in Phase 1.</td>
+      </tr>
+      <tr>
+        <td>Chara Dasha (Jaimini) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Stub only. Marked Phase 2.</td>
+      </tr>
+      <tr>
+        <td>Kalachakra Dasha <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Stub only. Marked Phase 2.</td>
+      </tr>
+      <tr>
+        <td>Narayana Dasha <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Stub only. Marked Phase 2.</td>
+      </tr>
+      <tr>
+        <td>Moola Dasha <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Stub only. Marked Phase 2.</td>
+      </tr>
+      <tr>
+        <td>Interactive Dasha timeline UI (past/present/future navigation)</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No timeline visualisation in frontend. SRS requires an interactive, navigable timeline view. Only text narrative returned.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 3.4 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 3.4 — AI Interpretation Module</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Personality / deep Vedic reading report (Step 1 + 2)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /kundli/start</code> → <code>POST /kundli/refine/{sid}</code>; SSE streaming; prompt in <code>prompts.py</code></td>
+      </tr>
+      <tr>
+        <td>Career &amp; Finance deep report (D10/10th house)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /report/career/{session_id}</code>; SSE streaming; <code>CAREER_REPORT_PROMPT</code> uses D10 + Saturn + Vimshottari</td>
+      </tr>
+      <tr>
+        <td>Compatibility / Matchmaking report (Ashtakoot)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /report/compatibility</code>; SSE streaming; <code>COMPATIBILITY_REPORT_PROMPT</code> covers Mangal Dosha, Navamsa</td>
+      </tr>
+      <tr>
+        <td>Dasha narrative AI (current period)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /dasha/{session_id}/narrative</code>; <code>DASHA_NARRATIVE_PROMPT</code></td>
+      </tr>
+      <tr>
+        <td>Ask-the-Astrologer follow-up conversational chat</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /kundli/chat/{session_id}</code>; per-message billing; guest limited; chat history maintained in session</td>
+      </tr>
+      <tr>
+        <td>Credit gate before every AI report</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>WalletService.debit()</code> called before generation; insufficient balance returns 402 with "Buy Credits" message</td>
+      </tr>
+      <tr>
+        <td>Automatic credit refund on AI failure</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>WalletService.refund()</code> in <code>except</code> blocks of all report endpoints including SSE stream failure</td>
+      </tr>
+      <tr>
+        <td>Yearly Forecast (Gochara transit overlay) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No <code>FORECAST_PROMPT</code> or <code>/report/forecast</code> endpoint. SRS FR 3.4.1 lists Yearly Forecast as a required report type.</td>
+      </tr>
+      <tr>
+        <td>Remedies report (gemstone, mantra, yantra) <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No remedies prompt or endpoint. SRS FR 3.4.1 lists Remedies as a required report type (1 credit).</td>
+      </tr>
+      <tr>
+        <td>AI disclaimer on every report screen <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.4.3: "All AI responses must include a disclaimer: interpretations are for guidance only." No disclaimer text found in <code>prompts.py</code> or <code>index.html</code> report screens.</td>
+      </tr>
+      <tr>
+        <td>Transit (Gochara) contextualisation in Dasha predictions</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Mentioned in career + dasha prompts conceptually. No actual Gochara transit data computed and injected into prompts. SRS FR 3.4.3 requires this.</td>
+      </tr>
+      <tr>
+        <td>Classical shloka references in professional reports</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>System prompt instructs AI to reference BPHS and classical texts but no explicit shloka injection or validation layer.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 3.5 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 3.5 — Report Export &amp; Sharing</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>PDF export</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>GET /export/{session_id}/pdf</code>; <code>backend/reports/pdf_generator.py</code>; fpdf2 with plain-text fallback</td>
+      </tr>
+      <tr>
+        <td>DOCX export</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>GET /export/{session_id}/docx</code>; <code>backend/reports/docx_generator.py</code>; python-docx with .txt fallback</td>
+      </tr>
+      <tr>
+        <td>Email report to user</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>POST /user/email-report</code> generates PDF and emails it via SMTP</td>
+      </tr>
+      <tr>
+        <td>PIN-protected shareable link (view-only, 72h expiry)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>5 endpoints implemented; SHA-256 PIN hash; <code>shared_readings</code> table; <code>shared_page.py</code> self-contained HTML</td>
+      </tr>
+      <tr>
+        <td>JSON / CSV raw chart data export for professional users <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.5 lists JSON/CSV chart data export for professional astrologers. No such endpoint exists.</td>
+      </tr>
+      <tr>
+        <td>Print-optimised layout <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No <code>@media print</code> CSS in <code>index.html</code>. SRS FR 3.5 requires print-optimised layouts.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 3.9 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 3.9 — Credit Purchase &amp; Wallet Management</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Wallet auto-created at registration with welcome credit</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>WalletService.award_welcome_credit()</code> called on email verification; region-aware amount</td>
+      </tr>
+      <tr>
+        <td>Immutable wallet ledger (all txn types)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>wallet_ledger</code> table (migration 002); <code>GET /wallet/transactions</code> returns full history</td>
+      </tr>
+      <tr>
+        <td>Paid / promo balance split, promo consumed first</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>paid_balance_cents</code> + <code>promo_balance_cents</code> columns; <code>debit_wallet_cents()</code> spends promo first atomically</td>
+      </tr>
+      <tr>
+        <td>Geo-based pricing (INR for India, USD for international)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>payment/wallet.py get_pricing(region)</code>; region stored on user; <code>GET /wallet/balance-detail</code> shows split</td>
+      </tr>
+      <tr>
+        <td>Promotional credits (welcome, labelled "Promo")</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>credit_wallet_cents(..., is_paid=False)</code>; ledger <code>txn_type=promo_credit</code>; promo label shown in UI</td>
+      </tr>
+      <tr>
+        <td>Mock payment UI (UPI / Card / Net Banking)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>Realistic modal with UPI QR, card form, net banking tabs in <code>index.html</code></td>
+      </tr>
+      <tr>
+        <td>Credits non-expiring (Phase 1 policy)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>No expiry logic in database or wallet code</td>
+      </tr>
+      <tr>
+        <td>Pre-report UI: show credits required + current balance <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Backend returns <code>balance_display</code> and cost in 402 error. However, SRS FR 3.9.5 requires a confirmation screen <em>before</em> deduction showing "credits required / current balance / balance after" — UI shows no such pre-flight confirmation dialog.</td>
+      </tr>
+      <tr>
+        <td>Post-report balance summary (credits consumed + remaining) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Backend returns <code>cost_display</code> and <code>wallet_display</code> in response. UI does not prominently display this on the report screen itself without navigation.</td>
+      </tr>
+      <tr>
+        <td>Low-balance alert ≤ 3 credits (in-app + email) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.9.5: notification when balance falls below 3 credits. No trigger in <code>debit_wallet_cents()</code> or email service.</td>
+      </tr>
+      <tr>
+        <td>Tiered credit packs (Starter 5 / Standard 20 / Value 50 / Professional 150) <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Two tiers coded in <code>wallet.py</code> (TOPUP_1, TOPUP_2). SRS FR 3.9.3 specifies four named tiers. UI shows generic packs, not named tiers.</td>
+      </tr>
+      <tr>
+        <td>Real payment gateway (Razorpay / Stripe + webhooks) <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td><code>payment/gateway.py</code> has adapters for Razorpay + Stripe but all methods return mock data. No actual API keys wired. No webhook handler for async payment confirmation.</td>
+      </tr>
+      <tr>
+        <td>Itemised receipt emailed after purchase <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.9.4: "itemised receipt is emailed to the user." No receipt email in wallet topup flow.</td>
+      </tr>
+      <tr>
+        <td>Tax calculation (GST for India, VAT for EU) <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No tax computation in pricing or payment flow.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 3.10 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-fail">SIGNIFICANT GAPS</span>
+    <h3>FR 3.10 — Super Admin Analytics Dashboard</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Admin panel with user list, wallet adjust, force-verify, raw SQL</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>GET /admin</code> renders full panel; wallet-adjust, force-verify, delete-user, SQL query endpoints exist</td>
+      </tr>
+      <tr>
+        <td>Basic stats: total users, today's readings, wallet balance</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>Database.get_admin_stats()</code> returns 5 aggregate metrics</td>
+      </tr>
+      <tr>
+        <td>Traffic metrics (DAU, MAU, unique visitors, session duration) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.2. No event tracking, session recording, or analytics aggregation in codebase.</td>
+      </tr>
+      <tr>
+        <td>Feature usage analytics (reports by type, dasha system usage) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.3. No per-report-type counters. <code>analytics-service/</code> has Dockerfile only — no implementation.</td>
+      </tr>
+      <tr>
+        <td>Revenue analytics (total, by pack tier, ARPU, refund rate) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.4. Wallet ledger exists but no aggregation queries surfaced in admin panel.</td>
+      </tr>
+      <tr>
+        <td>System health (API latency p50/p95/p99, error rate, uptime) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.6. No instrumentation, no Prometheus/OpenTelemetry integration.</td>
+      </tr>
+      <tr>
+        <td>Date-range filters on all metrics <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Admin panel shows static numbers only.</td>
+      </tr>
+      <tr>
+        <td>CSV/Excel export from dashboard <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.7 requires all charts and tables to support CSV/Excel export.</td>
+      </tr>
+      <tr>
+        <td>MFA-protected admin access <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.7 &amp; NFR 5.7.5: admin portal must be MFA-protected. Currently no auth at all on <code>GET /admin</code>.</td>
+      </tr>
+      <tr>
+        <td>Automated weekly admin email summary <span class="priority-tag p-med">MED</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 3.10.7: "automated weekly summary report emailed every Monday." No scheduler or cron found.</td>
+      </tr>
+      <tr>
+        <td>No PII exposed in analytics views <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Admin panel shows full user email list — SRS requires analytics to be anonymised/aggregated. Individual user records are directly accessible.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- FR 4 -->
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>FR 4 — Multi-Language &amp; Internationalisation</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>English, Hindi (Devanagari), Tamil language support</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>Language pills in UI; <code>LANGUAGE_INSTRUCTION</code> injected into every AI prompt; <code>preferred_language</code> on user record</td>
+      </tr>
+      <tr>
+        <td>AI output natively in selected language</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>language_instruction</code> tells Claude to respond entirely in chosen language</td>
+      </tr>
+      <tr>
+        <td>Language selector on landing screen</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>Visible on screen 2 (registration/birth data); language persists in <code>currentLanguage</code> JS var</td>
+      </tr>
+      <tr>
+        <td>UI labels translated (forms, buttons, placeholders)</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Main screen labels translated via <code>TRANSLATIONS</code> object. Not all dynamic messages, validation errors, or modal text is translated.</td>
+      </tr>
+      <tr>
+        <td>Language change re-renders UI without page reload</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td><code>applyTranslations()</code> updates labels but not all UI text re-renders reactively (e.g. chat messages, report content).</td>
+      </tr>
+      <tr>
+        <td>Dedicated i18n service with JSON/YAML resource bundles</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 6.1 architecture requires an i18n Service. Translations are hardcoded in <code>index.html</code> JS object. No external resource files. No <code>i18n-service/</code> microservice.</td>
+      </tr>
+      <tr>
+        <td>Date/number locale formatting (DD/MM/YYYY etc.)</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS FR 4.3 requires locale-specific date/number formats. No locale formatting library used.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>Section 2 — Non-Functional Requirements</h2>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>NFR 5.1/5.3 — Performance &amp; Reliability</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Kundli generation &lt; 3 seconds</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Delegates to PyJHora — timing depends on ephemeris availability. Not measured or guaranteed in code.</td>
+      </tr>
+      <tr>
+        <td>AI report &lt; 30 seconds (or SSE streaming)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>All AI report endpoints use SSE streaming — user sees incremental output, perceived latency is low.</td>
+      </tr>
+      <tr>
+        <td>Graceful degradation if AI unavailable</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>Kundli calculation runs independently of AI. AI errors return structured error + auto-refund.</td>
+      </tr>
+      <tr>
+        <td>Payment confirmation &lt; 5 seconds wallet update</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>Synchronous mock — wallet credited immediately. Real gateway async webhook not implemented.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-fail">SIGNIFICANT GAPS</span>
+    <h3>NFR 5.2 / 5.7 — Security (CRITICAL)</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>JWT authentication on all API endpoints</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>JWT utils implemented. However most endpoints do NOT enforce <code>verify_access_token()</code> — they accept an <code>email</code> body param without token validation. Auth is effectively honour-based.</td>
+      </tr>
+      <tr>
+        <td>JWT access token TTL 15 min / refresh token 7 days <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Default TTL is 60 minutes (env var). No refresh token mechanism at all. SRS NFR 5.7.5 requires 15 min access + 7 day refresh.</td>
+      </tr>
+      <tr>
+        <td>Rate limiting on all endpoints <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No SlowAPI / middleware rate limiter. Only email resend has a custom 1/hr guard. SRS NFR 5.7.2 requires API rate limiting to prevent brute force / DoS.</td>
+      </tr>
+      <tr>
+        <td>Account lockout after repeated auth failures <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS NFR 5.7.2: "repeated authentication failures must trigger temporary account lockout." No lockout logic in login endpoint.</td>
+      </tr>
+      <tr>
+        <td>Admin panel MFA / authentication <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td><code>GET /admin</code> is completely unauthenticated — anyone with the URL can access it. Contains wallet adjustment and raw SQL execution.</td>
+      </tr>
+      <tr>
+        <td>Parameterised SQL / no injection risk</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>All queries use <code>%s</code> placeholders with psycopg2. No string concatenation in SQL.</td>
+      </tr>
+      <tr>
+        <td>Secrets from environment variables (not hardcoded)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>ANTHROPIC_API_KEY</code>, <code>JWT_SECRET</code>, <code>DATABASE_URL</code> all from <code>os.environ</code></td>
+      </tr>
+      <tr>
+        <td>PII anonymised in AI prompts <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS NFR 5.2: "AI prompts sent to LLM provider shall be anonymised." Currently name, DOB, time and place of birth are sent verbatim to Claude API.</td>
+      </tr>
+      <tr>
+        <td>TLS 1.3 enforcement</td>
+        <td><span class="chip chip-na">INFRA</span></td>
+        <td>Not enforced at app level — expected at reverse proxy / cloud load balancer. Docker Compose has no TLS termination configured.</td>
+      </tr>
+      <tr>
+        <td>Secrets vault (HashiCorp Vault / AWS Secrets Manager) <span class="priority-tag p-high">HIGH</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>SRS NFR 5.7.2 requires secrets vault. Currently env vars only — acceptable for dev, not for production.</td>
+      </tr>
+      <tr>
+        <td>Dependency vulnerability scanning in CI/CD</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>No CI/CD pipeline, no <code>.github/workflows/</code>, no Snyk / Dependabot config found.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>NFR 5.4 / 5.6 — Scalability &amp; Maintainability</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>Status</th><th>Evidence / Notes</th></tr>
+      <tr>
+        <td>Stateless, horizontally scalable backend</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>FastAPI + PostgreSQL + psycopg2 connection pool. No server-side session state (sessions in-memory dict — see gap below).</td>
+      </tr>
+      <tr>
+        <td>Pluggable Dasha engine (no core changes for new system)</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td><code>AbstractDashaSystem</code> ABC + registry pattern</td>
+      </tr>
+      <tr>
+        <td>New languages without code changes (i18n resource files)</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td>Translations hardcoded in JS object. Adding a new language requires code change. SRS NFR 5.4 explicitly prohibits this.</td>
+      </tr>
+      <tr>
+        <td>Modular service folders with READMEs</td>
+        <td><span class="chip chip-pass">PASS</span></td>
+        <td>9 service directories each with Dockerfile + README + requirements.txt</td>
+      </tr>
+      <tr>
+        <td>In-memory session dict <span class="priority-tag p-crit">CRIT</span></td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td><code>_sessions: dict</code> in <code>main.py</code> is process-local. Multi-instance deployment will lose sessions. Must be moved to Redis (already in Docker Compose but not connected).</td>
+      </tr>
+      <tr>
+        <td>Test coverage ≥ 80% for calculation engine</td>
+        <td><span class="chip chip-partial">PARTIAL</span></td>
+        <td>8 test files exist covering major modules. Coverage not measured. No coverage report / CI enforcement.</td>
+      </tr>
+      <tr>
+        <td>Kubernetes manifests for deployment</td>
+        <td><span class="chip chip-fail">NOT DONE</span></td>
+        <td><code>infrastructure/k8s/</code> directory is empty. Docker Compose only. SRS architecture specifies container orchestration (Kubernetes).</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>Section 3 — Architecture Specification Compliance</h2>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">PARTIAL</span>
+    <h3>Service Layer Compliance</h3>
+  </div>
+  <div class="section-body">
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Architecture specifies 9 distinct service layers. Status below reflects whether each has a <em>running implementation</em> (not just a scaffold).</p>
+
+    <div class="arch-ok"><strong>✅ Presentation Layer</strong> — <code>frontend/index.html</code> is a functional SPA with all major screens, multi-language, and responsive design.</div>
+
+    <div class="arch-gap"><strong>❌ API Gateway</strong> — No dedicated API Gateway service. <code>backend/api/main.py</code> acts as a monolith handling auth, routing, billing, and business logic — violating the architecture's single-responsibility design. All 37+ endpoints are in one 1342-line file.</div>
+
+    <div class="arch-ok"><strong>✅ Calculation Service (Kundli Engine)</strong> — <code>backend/kundli_engine/engine.py</code> and <code>services/kundli-engine/</code> are both implemented. PyJHora integration provides real ephemeris computation.</div>
+
+    <div class="arch-ok"><strong>✅ AI Interpretation Service</strong> — <code>backend/ai_interpretation/agent.py</code> fully implemented with streaming, safety filter, planet calibrator, and 6 report types. <code>services/ai-interpretation-service/</code> mirrors this.</div>
+
+    <div class="arch-partial"><strong>⚠️ User &amp; Profile Service</strong> — Embedded in <code>backend/persistence/database.py</code> and <code>main.py</code>. Functional but not extracted as a standalone service. No multi-profile support per user.</div>
+
+    <div class="arch-partial"><strong>⚠️ Payment Service</strong> — <code>payment/gateway.py</code> has Razorpay + Stripe adapters but all return mock data. No real integration. No webhook handler. <code>services/payment-gateway-service/</code> is a stub.</div>
+
+    <div class="arch-ok"><strong>✅ Credit Wallet Service</strong> — Fully implemented: ledger table, paid/promo split, atomic debit (promo-first), auto-refund, geo-pricing. Both <code>backend/persistence/database.py</code> and <code>services/credit-wallet-service/</code> are in sync.</div>
+
+    <div class="arch-gap"><strong>❌ Analytics Service</strong> — <code>services/analytics-service/</code> has Dockerfile + README only. <code>src/</code> folder contains no Python files. No event tracking, metric aggregation, or dashboard data pipeline exists anywhere in the codebase.</div>
+
+    <div class="arch-gap"><strong>❌ i18n Service</strong> — Architecture specifies a dedicated service serving language bundles. Translations are hardcoded in a JS object inside <code>index.html</code>. No <code>i18n-service/</code> exists. Adding a new language requires code changes.</div>
+
+    <div class="arch-ok"><strong>✅ Data Store</strong> — PostgreSQL with psycopg2 connection pool. 3 schema migration files. Docker Compose provisions Postgres 16. Redis provisioned but not yet used by app (sessions still in-memory dict).</div>
+
+    <div class="arch-partial"><strong>⚠️ Dasha Engine</strong> — <code>services/dasha-engine/</code> is fully implemented as a standalone FastAPI microservice with pluggable architecture. Only Vimshottari is implemented; 5 other SRS-required systems are stubbed.</div>
+
+    <div class="arch-partial"><strong>⚠️ Report Export Service</strong> — <code>services/report-export-service/</code> has PDF generator only. DOCX generator lives in <code>backend/reports/</code> not replicated here. No S3/object storage integration for persisting reports.</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-fail">CRITICAL GAP</span>
+    <h3>Monolith vs. Microservices Architecture Mismatch</h3>
+  </div>
+  <div class="section-body">
+    <p style="font-size:.875rem;margin-bottom:14px">The codebase has <strong>two parallel implementations</strong> that are not synchronised:</p>
+    <div class="arch-gap">
+      <strong>Running Monolith:</strong> <code>backend/api/main.py</code> (1342 lines) contains all business logic, routing, auth, billing, AI calls, dasha, export, sharing, and admin. This is what actually runs via <code>start.py</code>.
+    </div>
+    <div class="arch-partial">
+      <strong>Service Scaffolds:</strong> <code>services/</code> directory has 9 sub-services with Dockerfiles, READMEs and some implementations. These are not wired together or deployed. The <code>docker-compose.yml</code> does not include the monolith backend.
+    </div>
+    <p style="font-size:.875rem;margin-top:14px;color:var(--yellow)">
+      <strong>Recommendation:</strong> For Phase 1 launch readiness, either (a) complete the monolith with all missing features and deploy it with Nginx reverse proxy, or (b) choose 2–3 services to properly extract (dasha-engine, report-export) and keep the rest in the monolith. Do not maintain both in parallel without a clear migration plan.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>Section 4 — Prioritised Gap List (What to Build Next)</h2>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-fail">Must Fix Before Launch</span>
+    <h3>🔴 Critical — Phase-1 Blockers</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Gap</th><th>SRS Reference</th><th>Estimated Effort</th></tr>
+      <tr><td>1</td><td>Admin panel must require authentication (currently open to anyone)</td><td>NFR 5.7.5</td><td>Small (add JWT check + admin role)</td></tr>
+      <tr><td>2</td><td>Enforce JWT token on all API endpoints (not just honour-based email param)</td><td>NFR 5.7.2</td><td>Medium (middleware + update all endpoints)</td></tr>
+      <tr><td>3</td><td>Add rate limiting middleware (SlowAPI or custom) on login + all endpoints</td><td>NFR 5.7.2</td><td>Small (1 middleware file)</td></tr>
+      <tr><td>4</td><td>Account lockout after N failed logins</td><td>NFR 5.7.2</td><td>Small (counter in DB)</td></tr>
+      <tr><td>5</td><td>Move <code>_sessions</code> dict to Redis (multi-instance crash risk)</td><td>NFR 5.4</td><td>Medium</td></tr>
+      <tr><td>6</td><td>Add AI disclaimer text on every report screen</td><td>FR 3.4.3</td><td>Trivial (UI + prompt append)</td></tr>
+      <tr><td>7</td><td>Pre-report confirmation dialog: credits required / balance / balance-after</td><td>FR 3.9.5</td><td>Small (frontend modal)</td></tr>
+      <tr><td>8</td><td>Real payment gateway integration (Razorpay) + webhook handler</td><td>FR 3.9.4</td><td>Large</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-partial">High Priority</span>
+    <h3>🟡 High — Core Feature Gaps</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Gap</th><th>SRS Reference</th><th>Estimated Effort</th></tr>
+      <tr><td>9</td><td>Implement Yogini Dasha engine (next most-used after Vimshottari)</td><td>FR 3.3</td><td>Medium</td></tr>
+      <tr><td>10</td><td>Yearly Forecast report (Gochara transit overlay)</td><td>FR 3.4.1</td><td>Medium (new prompt + endpoint)</td></tr>
+      <tr><td>11</td><td>Low-balance alert (≤ 3 credits) — in-app banner + email</td><td>FR 3.9.5</td><td>Small</td></tr>
+      <tr><td>12</td><td>Post-report balance summary prominently on report screen</td><td>FR 3.9.5</td><td>Small (frontend)</td></tr>
+      <tr><td>13</td><td>Multiple Kundli profiles per user (kundli_profiles table)</td><td>FR 3.1.2</td><td>Large (schema + UI)</td></tr>
+      <tr><td>14</td><td>Analytics event tracking (reports generated, dasha used, revenue)</td><td>FR 3.10.3/4</td><td>Large</td></tr>
+      <tr><td>15</td><td>JWT TTL to 15 min + refresh token endpoint</td><td>NFR 5.7.5</td><td>Small</td></tr>
+      <tr><td>16</td><td>North Indian + South Indian chart SVG visualisation in UI</td><td>FR 3.2.1</td><td>Large</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="badge badge-info">Medium Priority</span>
+    <h3>🔵 Medium — For Full Phase-1 Completeness</h3>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Gap</th><th>SRS Reference</th></tr>
+      <tr><td>17</td><td>Remedies report (gemstone, mantra, yantra)</td><td>FR 3.4.1</td></tr>
+      <tr><td>18</td><td>Chara Dasha + Kalachakra + Narayana + Moola Dasha engines</td><td>FR 3.3</td></tr>
+      <tr><td>19</td><td>Google + Apple OAuth login</td><td>FR 3.1.1</td></tr>
+      <tr><td>20</td><td>2FA (TOTP) support for all users; mandatory for admin</td><td>FR 3.1.1, NFR 5.7.5</td></tr>
+      <tr><td>21</td><td>Shadbala + Ashtakavarga computation</td><td>FR 3.2.2</td></tr>
+      <tr><td>22</td><td>Interactive Dasha timeline UI (visual, navigable)</td><td>FR 3.3</td></tr>
+      <tr><td>23</td><td>i18n resource files (JSON bundles, no code change for new language)</td><td>FR 4 / NFR 5.4</td></tr>
+      <tr><td>24</td><td>Four named credit pack tiers in UI + backend</td><td>FR 3.9.3</td></tr>
+      <tr><td>25</td><td>Itemised purchase receipt email</td><td>FR 3.9.4</td></tr>
+      <tr><td>26</td><td>Weekly automated admin summary email</td><td>FR 3.10.7</td></tr>
+      <tr><td>27</td><td>K8s manifests (Deployments, Services, HPA, Ingress)</td><td>NFR 5.4 / Architecture</td></tr>
+      <tr><td>28</td><td>PII anonymisation before sending to Claude API</td><td>NFR 5.2</td></tr>
+      <tr><td>29</td><td>Print-optimised CSS layout</td><td>FR 3.5</td></tr>
+      <tr><td>30</td><td>CI/CD pipeline with dependency vulnerability scanning</td><td>NFR 5.7.2</td></tr>
+    </table>
+  </div>
+</div>
+
+<footer>
+  NarayanAstroReader — Phase-1 Compliance Audit Report v2 &nbsp;|&nbsp; Generated: May 7 2026 &nbsp;|&nbsp; 53 requirements audited across FR 3.1–3.10, FR 4, NFR 5.1–5.7, and Architecture Spec
+</footer>
+</div>
+</body>
+</html>

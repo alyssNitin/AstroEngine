@@ -1,0 +1,9 @@
+# notification-service dependencies
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+httpx>=0.27.0
+# Phase 2:
+# firebase-admin>=6.5.0  # FCM push notifications
+# boto3>=1.34.0          # AWS SES
+# boto3>=1.34.0          # SQS consumer

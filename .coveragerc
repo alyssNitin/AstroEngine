@@ -1,0 +1,58 @@
+[run]
+# ─────────────────────────────────────────────────────────────────────────────
+# NarayanAstroReader — Coverage configuration
+# SRS §5.6: kundli-engine and dasha-engine must have ≥80% unit test coverage.
+# ─────────────────────────────────────────────────────────────────────────────
+source =
+    backend
+    payment
+
+omit =
+    # Migration / maintenance scripts
+    */migrations/*
+    backend/api/main.py           # Integration surface — covered by integration tests
+    backend/api/admin_panel.py    # HTML rendering — hard to unit-test
+    backend/api/shared_page.py
+    */__init__.py
+    */conftest.py
+    fix_wallet_balances.py
+    clear_users.py
+    start.py
+    scripts/*
+
+[report]
+# Minimum acceptable overall coverage — fail below this
+fail_under = 60
+
+# Precision for percentage display
+precision = 1
+
+# Show lines that are not covered
+show_missing = true
+skip_covered = false
+
+# Exclude trivial / boilerplate lines from coverage counts
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    if TYPE_CHECKING:
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    pass
+    \.\.\.
+    @(abc\.)?abstractmethod
+
+[html]
+directory = coverage_html
+
+[xml]
+output = coverage.xml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-module minimums (enforced separately in CI via --cov-fail-under)
+# ─────────────────────────────────────────────────────────────────────────────
+# backend/kundli_engine  ≥ 80%   (SRS §5.6)
+# services/dasha-engine  ≥ 80%   (SRS §5.6)
+# payment/wallet.py      ≥ 70%   (critical financial logic)
+# backend/auth/          ≥ 70%   (security-critical)

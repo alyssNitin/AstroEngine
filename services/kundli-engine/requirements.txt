@@ -1,0 +1,11 @@
+# kundli-engine service dependencies
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+pyswisseph>=2.10.3
+numpy>=1.26.0
+geopy>=2.4.0
+timezonefinder>=6.5.0
+geocoder>=1.38.0
+pytz>=2024.1
+httpx>=0.27.0        # for inter-service calls

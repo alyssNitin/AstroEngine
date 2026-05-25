@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vedic Astrology Platform — Unit Test Cases</title>
+<style>
+  :root {
+    --bg:       #f5f0e8;
+    --surface:  #fffdf8;
+    --surface2: #ede8dc;
+    --border:   #d4cab8;
+    --accent:   #5b3dc8;
+    --text:     #2c2416;
+    --muted:    #6b5c44;
+    --heading:  #3a2e1e;
+    --pass:     #1e6b3a;
+    --passbg:   rgba(30,107,58,0.10);
+    --warn:     #6b4700;
+    --warnbg:   rgba(107,71,0,0.10);
+    --info:     #0f4f66;
+    --infobg:   rgba(15,79,102,0.10);
+    --purple:   #3a1f9e;
+    --purplebg: rgba(58,31,158,0.10);
+    --red:      #8b1c14;
+    --redbg:    rgba(139,28,20,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13.5px;line-height:1.6;}
+  .page{max-width:1300px;margin:0 auto;padding:36px 24px;}
+
+  /* Header */
+  .doc-header{text-align:center;padding:44px 24px 32px;border-bottom:1px solid var(--border);margin-bottom:40px;}
+  .badge{display:inline-block;background:linear-gradient(135deg,var(--accent),#3a1f9e);color:#fff;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:14px;}
+  .doc-header h1{font-size:2rem;font-weight:800;color:var(--heading);margin-bottom:8px;}
+  .doc-header .sub{color:var(--muted);font-size:.95rem;}
+  .meta-row{display:flex;justify-content:center;gap:28px;margin-top:20px;flex-wrap:wrap;}
+  .meta-item{font-size:11px;color:var(--muted);}.meta-item span{color:var(--heading);font-weight:700;}
+
+  /* Stats bar */
+  .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:36px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
+  .stat-num{font-size:1.8rem;font-weight:800;color:var(--accent);}
+  .stat-label{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+
+  /* Section */
+  .section{margin-bottom:44px;}
+  .section-title{font-size:1.1rem;font-weight:700;color:var(--heading);border-left:4px solid var(--accent);padding-left:12px;margin-bottom:6px;}
+  .section-sub{font-size:12px;color:var(--muted);margin-bottom:14px;padding-left:16px;}
+
+  /* Table */
+  .tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead tr{background:var(--surface2);}
+  th{padding:9px 12px;text-align:left;color:var(--heading);font-weight:700;font-size:11px;letter-spacing:.4px;text-transform:uppercase;border-bottom:2px solid var(--border);white-space:nowrap;}
+  td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  tr:nth-child(even) td{background:rgba(0,0,0,.018);}
+  tr:hover td{background:rgba(91,61,200,.04);}
+
+  /* TC id */
+  .tc-id{font-family:monospace;font-weight:700;font-size:11px;color:var(--accent);white-space:nowrap;}
+
+  /* Tags */
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;}
+  .tag-unit   {background:var(--infobg);  color:var(--info);  border:1px solid rgba(15,79,102,.3);}
+  .tag-perf   {background:var(--warnbg);  color:var(--warn);  border:1px solid rgba(107,71,0,.3);}
+  .tag-sec    {background:var(--redbg);   color:var(--red);   border:1px solid rgba(139,28,20,.3);}
+  .tag-integ  {background:var(--purplebg);color:var(--purple);border:1px solid rgba(58,31,158,.3);}
+  .tag-contract{background:rgba(30,107,58,.1);color:var(--pass);border:1px solid rgba(30,107,58,.3);}
+
+  /* Priority */
+  .pri-high  {font-weight:700;color:var(--red);}
+  .pri-med   {font-weight:700;color:var(--warn);}
+  .pri-low   {font-weight:700;color:var(--info);}
+
+  /* Code inline */
+  code{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px;font-family:monospace;color:var(--info);}
+
+  /* Footer */
+  .doc-footer{text-align:center;color:var(--muted);font-size:11px;padding:28px 0 12px;border-top:1px solid var(--border);margin-top:48px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="doc-header">
+  <div class="badge">Unit Test Cases</div>
+  <h1>Vedic Astrology Platform — Test Case Specification</h1>
+  <p class="sub">Phase 1: AI Core & Credit System — All Microservices</p>
+  <div class="meta-row">
+    <div class="meta-item">Version <span>1.0</span></div>
+    <div class="meta-item">Phase <span>1 of 3</span></div>
+    <div class="meta-item">Total Test Cases <span>85</span></div>
+    <div class="meta-item">Date <span>May 2026</span></div>
+    <div class="meta-item">Status <span>Ready for Review</span></div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-num">85</div><div class="stat-label">Total TCs</div></div>
+  <div class="stat-card"><div class="stat-num">65</div><div class="stat-label">Unit Tests</div></div>
+  <div class="stat-card"><div class="stat-num">9</div><div class="stat-label">Performance</div></div>
+  <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">Security</div></div>
+  <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">Contract</div></div>
+  <div class="stat-card"><div class="stat-num">10</div><div class="stat-label">Services Covered</div></div>
+  <div class="stat-card"><div class="stat-num">38</div><div class="stat-label">High Priority</div></div>
+  <div class="stat-card"><div class="stat-num">30</div><div class="stat-label">Medium Priority</div></div>
+</div>
+
+<!-- ══════════ 1. AUTH SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">1. Auth Service</div>
+  <div class="section-sub">auth-service · Node.js + Express + Passport.js + speakeasy · 10 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-AUTH-001</td><td><code>registerUser()</code></td><td>Successful registration with valid email and password creates user, issues tokens, and auto-creates wallet</td><td>POST /auth/register · { email: "test@x.com", password: "Str0ng!Pass" }</td><td>HTTP 201 · user record created · credit_wallet created with balance=0 · access + refresh token returned</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-002</td><td><code>registerUser()</code></td><td>Registration with already-existing email returns 409 Conflict — no duplicate user created</td><td>Email already exists in DB · same POST payload</td><td>HTTP 409 · error: "Email already registered" · no new user or wallet record</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-003</td><td><code>registerUser()</code></td><td>Registration with malformed email returns 400 Bad Request</td><td>{ email: "notanemail", password: "Str0ng!Pass" }</td><td>HTTP 400 · validation error message</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-AUTH-004</td><td><code>loginUser()</code></td><td>Login with correct credentials issues valid JWT access and refresh token pair</td><td>Registered user · correct password</td><td>HTTP 200 · access_token (exp 15 min) · refresh_token (exp 7 days) · user profile in response</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-005</td><td><code>loginUser()</code></td><td>Login with incorrect password returns 401 and does not reveal whether email exists</td><td>Registered email · wrong password</td><td>HTTP 401 · generic error (no account hint)</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-006</td><td><code>oauthCallback()</code></td><td>Google OAuth callback creates new user and wallet on first login</td><td>Valid Google ID token · email not previously registered</td><td>HTTP 200 · new user record · wallet created · tokens issued · oauth_provider = "google"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-007</td><td><code>verifyAccessToken()</code></td><td>Expired access token is rejected by auth middleware</td><td>JWT with exp claim in the past</td><td>HTTP 401 · error: "Token expired" · request not forwarded</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-008</td><td><code>refreshToken()</code></td><td>Valid refresh token issues new access token and rotates the refresh token</td><td>POST /auth/refresh · valid refresh_token</td><td>HTTP 200 · new access_token · new refresh_token · old refresh_token invalidated</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AUTH-009</td><td><code>setupMFA()</code></td><td>MFA setup generates a TOTP secret and returns QR-code seed for the authenticator app</td><td>Authenticated user · POST /auth/mfa/setup</td><td>HTTP 200 · totp_secret stored (encrypted) · qr_uri returned · mfa_enabled remains false until verified</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-AUTH-010</td><td><code>logout()</code></td><td>Logout invalidates both access and refresh tokens so neither can be reused</td><td>Authenticated user · POST /auth/logout</td><td>HTTP 200 · subsequent request with same access_token returns 401</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 2. KUNDLI ENGINE ══════════ -->
+<div class="section">
+  <div class="section-title">2. Kundli Engine</div>
+  <div class="section-sub">kundli-engine · Python + FastAPI + pyswisseph · 15 test cases · ≥80% coverage required (SRS §5.6)</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-KUNDLI-001</td><td><code>compute_lagna()</code></td><td>Ascendant (Lagna) computed correctly for a known birth data reference point</td><td>DOB: 1990-01-15 · TOB: 10:30 IST · Place: Mumbai (19.076°N, 72.877°E) · Lahiri Ayanamsa</td><td>Lagna = Sagittarius (Dhanu) · degree within ±0.01° of known reference</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-002</td><td><code>compute_planet_position()</code></td><td>Sun position computed in correct sign, degree, and nakshatra</td><td>Same reference birth data · Lahiri Ayanamsa</td><td>Sun in Capricorn (Makara) · degree within ±0.01° · nakshatra = Uttara Ashadha</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-003</td><td><code>compute_planet_position()</code></td><td>Moon position computed correctly — critical for Dasha calculation</td><td>Same reference birth data</td><td>Moon sign, degree, nakshatra, and pada all match known reference within ±0.01°</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-004</td><td><code>apply_ayanamsa()</code></td><td>Lahiri Ayanamsa reduces tropical longitude to correct sidereal value</td><td>Tropical Sun longitude = 295.5° · Year 1990</td><td>Sidereal longitude = tropical − Lahiri value (≈ 295.5 − 23.71 = 271.79°)</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-005</td><td><code>apply_ayanamsa()</code></td><td>Raman Ayanamsa produces a different value from Lahiri for the same date</td><td>Same tropical longitude · Year 1990 · Raman selected</td><td>Raman ayanamsa value ≠ Lahiri value · difference ≈ 0.98° for year 1990</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-006</td><td><code>compute_divisional_chart()</code></td><td>D9 Navamsa chart places planets in correct rasis using standard formula</td><td>Reference chart with known Navamsa positions</td><td>All 9 planets in correct Navamsa rasi · matches published reference ephemeris</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-007</td><td><code>compute_divisional_chart()</code></td><td>D10 Dashamsa chart places planets in correct rasis</td><td>Reference chart with known Dashamsa positions</td><td>All planets in correct D10 rasi · formula: (degree_in_sign × 10) mod 30 → rasi</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-008</td><td><code>detect_yogas()</code></td><td>Raj Yoga detected when 5th/9th lord is conjunct or aspects 10th lord</td><td>Chart with known Raj Yoga (e.g. 5L in 10H)</td><td>yogas list contains { name: "Raj Yoga", planets: [...], strength: ... }</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-009</td><td><code>detect_yogas()</code></td><td>Kemdrum Yoga detected when no planets are in 2nd or 12th from Moon</td><td>Chart with Moon in 1H, no planets in 2H or 12H</td><td>yogas list contains { name: "Kemdrum Yoga" }</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-010</td><td><code>compute_shadbala()</code></td><td>Shadbala six-fold strength totals are within the expected valid range for each planet</td><td>Reference chart with known Shadbala values</td><td>Each planet's total rupas within [0.5, 10.0] · matches reference within ±0.5%</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-011</td><td><code>compute_ashtakavarga()</code></td><td>Ashtakavarga benefic points for each planet sum to the correct total across all 12 houses</td><td>Reference chart</td><td>Sum of benefic points for Saturn across 12 houses = known reference total</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-012</td><td><code>compute_house_lordship()</code></td><td>House lordships assigned correctly based on Lagna sign</td><td>Lagna = Aries (Mesha)</td><td>House 1 lord = Mars, House 2 lord = Venus, House 3 lord = Mercury … House 12 lord = Jupiter</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-013</td><td><code>calculate_chart()</code></td><td>Full chart calculation completes within the 3-second SLA requirement</td><td>Standard birth data · Lahiri Ayanamsa · both chart styles</td><td>Response time &lt; 3000 ms in 95th percentile across 100 consecutive runs</td><td><span class="tag tag-perf">Performance</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-014</td><td><code>calculate_chart()</code></td><td>Birth date in the future is rejected with a validation error</td><td>DOB: 2099-01-01</td><td>HTTP 400 · error: "Date of birth cannot be in the future"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-KUNDLI-015</td><td><code>calculate_chart()</code></td><td>Missing time of birth (TOB) returns 400 — TOB is mandatory for chart calculation</td><td>DOB provided · TOB: null</td><td>HTTP 400 · error: "Time of birth is required"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 3. DASHA ENGINE ══════════ -->
+<div class="section">
+  <div class="section-title">3. Dasha Engine</div>
+  <div class="section-sub">dasha-engine · Python + FastAPI · Pluggable module architecture · 10 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-DASHA-001</td><td><code>vimshottari.compute_start()</code></td><td>Vimshottari Dasha start date computed from Moon's nakshatra position</td><td>Moon in Rohini Nakshatra at 35% of its span</td><td>Dasha start = Moon (10 years) · remaining period = 10 × 0.65 = 6.5 years from DOB</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-DASHA-002</td><td><code>vimshottari.compute_mahadasha()</code></td><td>Full 120-year Vimshottari Mahadasha cycle orders planets correctly</td><td>Any valid birth chart</td><td>Cycle: Ke(7)→Ve(20)→Su(6)→Mo(10)→Ma(7)→Ra(18)→Ju(16)→Sa(19)→Me(17) = 120 years</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-DASHA-003</td><td><code>vimshottari.compute_antardasha()</code></td><td>Antardasha (sub-period) durations within a Mahadasha sum to the full Mahadasha period</td><td>Jupiter Mahadasha (16 years)</td><td>Sum of all 9 Antardashas within Jupiter Mahadasha = 16 years ± 1 day</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-DASHA-004</td><td><code>get_current_dasha()</code></td><td>Current active Mahadasha and Antardasha identified correctly for today's date</td><td>Reference birth data with known current dasha</td><td>Returned Mahadasha and Antardasha match known reference · start/end dates within ±1 day</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-DASHA-005</td><td><code>yogini.compute_mahadasha()</code></td><td>Yogini Dasha 36-year cycle produces correct planet sequence and durations</td><td>Any valid birth chart</td><td>Cycle: Mangala(1)→Pingala(2)→Dhanya(3)→Bhramari(4)→Bhadrika(5)→Ulka(6)→Siddha(7)→Sankata(8) = 36 years</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-DASHA-006</td><td><code>plugin_interface.load_system()</code></td><td>A new Dasha module added to <code>src/systems/</code> is discoverable without modifying core engine code</td><td>New file <code>custom_dasha.py</code> placed in systems/ with required interface</td><td>System loads correctly · appears in /dasha/systems list · can be called via /dasha/calculate</td><td><span class="tag tag-contract">Contract</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-DASHA-007</td><td><code>compute_gochara()</code></td><td>Current transit (Gochara) positions are computed and overlaid on the Dasha timeline</td><td>Birth chart + today's date</td><td>JSON includes current_transits array with each planet's current sign and house from natal Moon</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-DASHA-008</td><td><code>vimshottari.compute_pratyantardasha()</code></td><td>Pratyantardasha (sub-sub-period) durations sum correctly within their parent Antardasha</td><td>Saturn Mahadasha · Jupiter Antardasha</td><td>Sum of all 9 Pratyantardashas within Ju Antardasha of Sa Mahadasha equals Antardasha length ± 1 day</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-DASHA-009</td><td><code>build_timeline_json()</code></td><td>Timeline JSON output conforms to the documented schema and all date ranges are contiguous with no gaps</td><td>Complete Vimshottari calculation result</td><td>Each period's end_date + 1 day = next period's start_date · no overlapping or missing periods</td><td><span class="tag tag-contract">Contract</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-DASHA-010</td><td><code>chara.compute_mahadasha()</code></td><td>Chara Dasha rasi-based periods computed in correct sequence for a given Lagna</td><td>Lagna = Aries (Mesha)</td><td>First Mahadasha = Aries · sequence progresses through rasis per Parashari Chara Dasha rules</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 4. AI INTERPRETATION SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">4. AI Interpretation Service</div>
+  <div class="section-sub">ai-interpretation-service · Python + FastAPI · Privacy, validation, and localisation · 8 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-AI-001</td><td><code>build_prompt()</code></td><td>Raw LLM prompt contains no PII — name, DOB, birth time, and birth place must be absent</td><td>User profile with name "Narayan Sharma" · DOB 1990-01-15 · place "Mumbai"</td><td>Generated prompt string does not contain "Narayan", "Sharma", "1990", or "Mumbai" · only astrological position data</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AI-002</td><td><code>build_prompt()</code></td><td>Locale-aware prompt for Hindi language is generated in Hindi script</td><td>language = "hi" · structured chart JSON</td><td>Prompt contains Hindi Devanagari instructions · section headers in Hindi · output_language directive = "Hindi"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AI-003</td><td><code>build_prompt()</code></td><td>Locale-aware prompt for Tamil language is generated with Tamil instructions</td><td>language = "ta" · structured chart JSON</td><td>Prompt contains Tamil language directives · output_language = "Tamil" · appropriate honorifics specified</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AI-004</td><td><code>validate_interpretation()</code></td><td>Deterministic validator rejects internally contradictory astrological output</td><td>LLM returns: "Saturn in Aries gives great results" when Saturn is actually in Taurus per chart data</td><td>Validator raises <code>AstroInconsistencyError</code> · report is not returned to user · retry or fallback triggered</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AI-005</td><td><code>generate_report()</code></td><td>All AI-generated reports include the mandatory guidance disclaimer</td><td>Any report_type (personal / compatibility / career)</td><td>Response body contains disclaimer text about guidance-only nature and not replacing professional advice</td><td><span class="tag tag-contract">Contract</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AI-006</td><td><code>generate_report()</code> + <code>handle_failure()</code></td><td>When LLM API call fails, credit-wallet-service refund endpoint is called automatically</td><td>Mock LLM to raise TimeoutError · user had credits deducted before call</td><td>Refund API called within 60 seconds · wallet balance restored · ledger entry type = "refund" · user notified</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-AI-007</td><td><code>generate_personal_report()</code></td><td>Personal report contains all mandatory sections: personality, strengths, challenges, Dasha outlook</td><td>Valid chart JSON · language = "en" · report_type = "personal"</td><td>Report sections: personality_profile, key_strengths, life_challenges, current_dasha_analysis, recommendations</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-AI-008</td><td><code>generate_compatibility_report()</code></td><td>Compatibility report uses data from both birth charts and produces a synastry analysis</td><td>Two profile IDs · both charts calculated</td><td>Report references planets from both charts · includes compatibility score and guna milan count</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 5. CREDIT WALLET SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">5. Credit Wallet Service</div>
+  <div class="section-sub">credit-wallet-service · Node.js + PostgreSQL atomic transactions · 10 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-WALLET-001</td><td><code>createWallet()</code></td><td>Wallet is automatically created on user registration with zero balance</td><td>New user registration event received</td><td>Wallet record created · paid_balance=0 · promo_balance=0 · linked to user_id</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-002</td><td><code>deductCredits()</code></td><td>Credit deduction succeeds atomically when balance is sufficient</td><td>paid_balance=10 · deduct 3 credits for personal report</td><td>paid_balance=7 · ledger entry: type=consumed, credits_delta=−3, balance_after=7 · HTTP 200</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-003</td><td><code>deductCredits()</code></td><td>Credit deduction blocked and balance unchanged when balance is insufficient</td><td>paid_balance=2 · promo_balance=0 · attempt to deduct 3 credits</td><td>HTTP 402 · error: "Insufficient credits" · balance unchanged · no ledger entry created</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-004</td><td><code>deductCredits()</code></td><td>Promotional credits are consumed before paid credits</td><td>paid_balance=5 · promo_balance=3 · deduct 2 credits</td><td>promo_balance=1 · paid_balance=5 (unchanged) · ledger entry shows credits from promo pool</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-005</td><td><code>deductCredits()</code></td><td>Concurrent deduction requests for the same wallet do not over-deduct (optimistic locking)</td><td>paid_balance=5 · two simultaneous requests each deducting 5 credits</td><td>Exactly one deduction succeeds · other returns 402 · final balance = 0 · no negative balance</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-006</td><td><code>refundCredits()</code></td><td>Auto-refund restores the exact credits deducted when AI report generation fails</td><td>3 credits deducted · AI service timeout · refund triggered</td><td>paid_balance restored by exactly 3 · ledger entry: type=refund, credits_delta=+3 · completes within 60 seconds</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-007</td><td><code>getLedger()</code></td><td>Ledger returns all transaction types with correct running balance snapshots</td><td>Wallet with 5 mixed transactions (purchase, consumed, refund, promo)</td><td>Each entry has: type, credits_delta, balance_after · balance_after of each row = balance_after of prev + credits_delta</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-WALLET-008</td><td><code>addCredits()</code></td><td>Credits added after payment confirmation and ledger entry type is "purchase"</td><td>SQS CreditPurchaseConfirmed event received · 20 credits</td><td>paid_balance increased by 20 · ledger entry: type=purchase, credits_delta=+20 · balance_after correct</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-009</td><td><code>checkLowBalance()</code></td><td>Low-balance notification triggered when total balance drops to exactly 3 credits</td><td>Balance drops from 4 to 3 after deduction</td><td>notification-service low-balance endpoint called · payload includes user_id and remaining balance</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-WALLET-010</td><td><code>getBalance()</code></td><td>Balance response distinguishes paid and promotional credits in separate fields</td><td>paid_balance=8 · promo_balance=2</td><td>{ paid_balance: 8, promo_balance: 2, total: 10 } · all three fields present</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 6. PAYMENT GATEWAY SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">6. Payment Gateway Service</div>
+  <div class="section-sub">payment-gateway-service · Node.js · PCI-DSS scoped module · 8 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-PAY-001</td><td><code>getPacks()</code></td><td>Credit packs returned in INR with GST for users in the IN region</td><td>User region = "IN" · GET /payment/packs</td><td>All pack prices in INR · tax_rate = 18% (GST) · currency = "INR" in all pack entries</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-PAY-002</td><td><code>getPacks()</code></td><td>Credit packs returned in USD for users in the US region</td><td>User region = "US" · GET /payment/packs</td><td>All pack prices in USD · currency = "USD" · no GST applied</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-PAY-003</td><td><code>createOrder()</code></td><td>Payment order created with correct credit quantity and amount</td><td>User selects "Standard" pack (20 credits) · region = "IN"</td><td>gateway_order_id returned · credits = 20 · amount in INR · status = "pending"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-PAY-004</td><td><code>handleWebhook()</code></td><td>Webhook with valid HMAC signature is accepted and credit award SQS message published</td><td>Razorpay payment.captured event · correct HMAC-SHA256 signature</td><td>HTTP 200 · CreditPurchaseConfirmed published to SQS · order status updated to "success"</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-PAY-005</td><td><code>handleWebhook()</code></td><td>Webhook with tampered or invalid signature is rejected — no credits awarded</td><td>Same event body · invalid HMAC signature</td><td>HTTP 400 · error: "Invalid signature" · no SQS message · no order status change</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-PAY-006</td><td><code>handleWebhook()</code></td><td>Duplicate webhook for the same payment is ignored (idempotency)</td><td>Same payment.captured event received twice with identical gateway_order_id</td><td>Second webhook returns HTTP 200 but no duplicate SQS message or ledger entry created</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-PAY-007</td><td><code>calculateTax()</code></td><td>GST calculated at 18% on the base pack price for Indian users</td><td>Pack base price = ₹499 · region = "IN"</td><td>tax_amount = ₹89.82 · total = ₹588.82 · tax_label = "GST 18%"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-PAY-008</td><td><code>handleWebhook()</code></td><td>Failed payment does not add credits to the wallet</td><td>payment.failed event received · valid signature</td><td>Order status = "failed" · no SQS message published · wallet balance unchanged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 7. REPORT EXPORT SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">7. Report Export Service</div>
+  <div class="section-sub">report-export-service · Python + FastAPI + WeasyPrint + python-docx · 6 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-EXPORT-001</td><td><code>generate_pdf()</code></td><td>PDF generated from completed report is a valid, non-empty PDF file</td><td>Completed ai_report with status = "completed" · user authenticated</td><td>HTTP 200 · presigned S3 URL returned · object at URL is valid PDF (starts with %PDF)</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EXPORT-002</td><td><code>generate_docx()</code></td><td>DOCX export succeeds for Professional Astrologer role</td><td>User role = "professional" · completed report</td><td>HTTP 200 · presigned S3 URL for .docx file · valid OOXML structure</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-EXPORT-003</td><td><code>generate_docx()</code></td><td>DOCX export blocked for General User role — returns 403</td><td>User role = "general" · completed report</td><td>HTTP 403 · error: "DOCX export requires Professional account"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-EXPORT-004</td><td><code>create_share_link()</code></td><td>Share link created with a unique token and correct expiry timestamp</td><td>Authenticated user · POST /export/{id}/share · expiry = 7 days</td><td>share_token generated (UUID) · share_expires_at = now + 7 days · view URL returned</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-EXPORT-005</td><td><code>view_shared_report()</code></td><td>Expired share link returns 410 Gone — no report content served</td><td>share_expires_at is in the past · GET /export/share/{token}</td><td>HTTP 410 · error: "Share link has expired" · no report content returned</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-EXPORT-006</td><td><code>generate_pdf()</code></td><td>PDF export performance — generation completes within 10 seconds for a standard report</td><td>Full personal report (~2000 words) · PDF generation request</td><td>S3 URL returned within 10 000 ms · file size between 100 KB and 5 MB</td><td><span class="tag tag-perf">Performance</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 8. ANALYTICS SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">8. Analytics Service</div>
+  <div class="section-sub">analytics-service · Python + Celery + OpenSearch · Super Admin only · 5 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-ANALYTICS-001</td><td><code>get_traffic_metrics()</code></td><td>Daily active user count aggregation returns correct count for a date range</td><td>10 distinct users logged in on 2026-05-01 · date_from = 2026-05-01 · date_to = 2026-05-01</td><td>{ date: "2026-05-01", dau: 10 } · exact match</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-ANALYTICS-002</td><td><code>get_traffic_metrics()</code></td><td>Date range filter excludes events outside the specified window</td><td>Events on May 1 and May 3 · filter: date_from = 2026-05-02 · date_to = 2026-05-02</td><td>No data returned for May 1 or May 3 · only May 2 events included</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-ANALYTICS-003</td><td><code>get_revenue_metrics()</code></td><td>Revenue aggregate matches the sum of all successful payment_orders for the period</td><td>3 successful payments: ₹499, ₹999, ₹1999 on 2026-05-01</td><td>total_revenue = ₹3497 · currency = "INR" · payment_count = 3</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-ANALYTICS-004</td><td><code>get_traffic_metrics()</code></td><td>Analytics endpoint never returns PII — no user names, emails, or birth data in response</td><td>GET /admin/analytics/traffic · Super Admin authenticated</td><td>Response contains only aggregated metrics · no user_id, email, name, DOB, or PII fields</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ANALYTICS-005</td><td><code>weekly_report_task()</code></td><td>Celery scheduled task fires every Monday and sends email digest to Super Admin</td><td>Celery beat schedule configured · Monday 00:00 UTC triggered</td><td>Celery task executes · SES email dispatched · recipient = super_admin email · subject contains "Weekly Report"</td><td><span class="tag tag-perf">Performance</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 9. NOTIFICATION SERVICE ══════════ -->
+<div class="section">
+  <div class="section-title">9. Notification Service</div>
+  <div class="section-sub">notification-service · Node.js + SQS consumer + Firebase FCM + AWS SES · 5 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-NOTIF-001</td><td><code>dispatchPush()</code></td><td>Push notification dispatched via Firebase FCM with correct device token and payload</td><td>SQS LowBalanceAlert event · user has FCM device_token registered</td><td>FCM API called with correct device_token · payload.title = "Low Credit Balance" · payload.body contains balance count</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-NOTIF-002</td><td><code>dispatchEmail()</code></td><td>Payment receipt email dispatched via SES with correct recipient, subject, and itemised body</td><td>SQS PaymentSuccessEvent · user email = "user@test.com" · pack = "Standard 20 credits"</td><td>SES SendEmail called · To: user@test.com · Subject contains "Receipt" · body contains credits, amount, order ID</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-NOTIF-003</td><td><code>dispatchPush()</code></td><td>Low-balance alert shows the correct remaining credit count in the notification body</td><td>Balance = 2 credits after deduction (below threshold of 3)</td><td>Notification body: "You have 2 credits remaining. Top up to continue generating reports."</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-NOTIF-004</td><td><code>renderTemplate()</code></td><td>i18n notification template rendered in the user's preferred language (Hindi)</td><td>User language_pref = "hi" · LowBalanceAlert event</td><td>Push notification title and body rendered in Hindi · Devanagari script used</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-NOTIF-005</td><td><code>dispatchEmail()</code></td><td>AI failure notification email is sent to user when report generation fails and credits are refunded</td><td>SQS AIFailureEvent · user_id · refunded_credits = 3</td><td>SES email sent · subject: "Report generation failed — credits refunded" · body confirms 3 credits restored</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 10. API GATEWAY ══════════ -->
+<div class="section">
+  <div class="section-title">10. API Gateway</div>
+  <div class="section-sub">Kong / AWS API Gateway · JWT middleware · Rate limiting · Role-based access · 8 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-GATEWAY-001</td><td><code>jwtMiddleware()</code></td><td>Valid, non-expired JWT allows request to be forwarded to the downstream service</td><td>GET /kundli/profiles · Authorization: Bearer &lt;valid JWT&gt;</td><td>HTTP 200 from downstream · X-User-Id header injected into forwarded request</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-002</td><td><code>jwtMiddleware()</code></td><td>Request without Authorization header returns 401 Unauthorized</td><td>GET /kundli/profiles · no Authorization header</td><td>HTTP 401 · error: "Authorization header missing" · request not forwarded</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-003</td><td><code>jwtMiddleware()</code></td><td>JWT signed with a different secret key is rejected</td><td>Token signed with key "wrong-secret" · gateway expects "correct-secret"</td><td>HTTP 401 · error: "Invalid token signature" · request not forwarded</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-004</td><td><code>rateLimiter()</code></td><td>Rate limit of 100 req/min per IP is enforced — 101st request is rejected</td><td>100 requests sent within 60 seconds from same IP</td><td>First 100 requests: HTTP 200 · 101st request: HTTP 429 · Retry-After header present</td><td><span class="tag tag-perf">Performance</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-005</td><td><code>roleMiddleware()</code></td><td>Admin-only route returns 403 when accessed by a general user</td><td>GET /admin/analytics/traffic · JWT role = "general"</td><td>HTTP 403 · error: "Insufficient permissions" · request not forwarded to analytics service</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-006</td><td><code>routeRequest()</code></td><td>Public registration and login routes are accessible without a JWT token</td><td>POST /auth/register · POST /auth/login · no Authorization header</td><td>Requests forwarded to auth-service · HTTP 200/201 returned normally</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-007</td><td><code>i18nHeaderInjection()</code></td><td>Accept-Language header is propagated to all downstream services</td><td>Request with Accept-Language: hi</td><td>Forwarded request to downstream service includes Accept-Language: hi header unchanged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-GATEWAY-008</td><td><code>rateLimiter()</code></td><td>Repeated failed authentication attempts trigger account lockout after 5 failures</td><td>5 consecutive POST /auth/login with wrong password from same IP</td><td>6th attempt returns HTTP 429 · lockout message · security alert triggered internally</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 11. EMAIL VERIFICATION ══════════ -->
+<div class="section">
+  <div class="section-title">11. Email Verification (Scenario 1)</div>
+  <div class="section-sub">backend/auth/email_service.py · /auth/verify-email · /auth/resend-verification · 10 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-EMAIL-001</td><td><code>register()</code></td><td>Registration creates a verification token and sets email_verified=FALSE</td><td>POST /auth/register with valid email/password/name</td><td>email_verified=FALSE · verification_token is UUID · token_expires = now+24h · wallet_balance_cents=0</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-002</td><td><code>send_verification_email()</code></td><td>Mock mode prints verification link to stdout when SMTP not configured</td><td>EMAIL_HOST not set in env · register a new user</td><td>Console output contains the verification URL with valid token · no SMTP connection attempted</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-003</td><td><code>verify_email(token)</code></td><td>Valid, non-expired token sets email_verified=TRUE and credits $0.20</td><td>GET /auth/verify-email?token=&lt;valid-uuid&gt; within 24h</td><td>HTTP 200 · email_verified=TRUE · wallet_balance_cents=20 · token cleared from DB</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-004</td><td><code>verify_email(token)</code></td><td>Expired token returns 400 and does NOT credit wallet</td><td>Token with expires = now-1h</td><td>HTTP 400 · "Verification link expired" · email_verified still FALSE · wallet_balance_cents=0</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-005</td><td><code>verify_email(token)</code></td><td>Unknown / tampered token returns 400</td><td>GET /auth/verify-email?token=invalid-uuid</td><td>HTTP 400 · "Invalid verification token" · no DB changes</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-006</td><td><code>verify_email(token)</code></td><td>Already-verified user re-using token returns 400, no double-credit</td><td>email_verified=TRUE · attempt to use same token again</td><td>HTTP 400 · "Already verified" · wallet_balance_cents unchanged</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-007</td><td><code>resend_verification(email)</code></td><td>Resend generates a new token and invalidates the old one</td><td>POST /auth/resend-verification · email with email_verified=FALSE</td><td>New token in DB · old token no longer valid · HTTP 200 · email sent / logged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-008</td><td><code>resend_verification(email)</code></td><td>Rate limit: 4th resend request within 1 hour is rejected</td><td>3 resend requests already sent in last 60 minutes</td><td>HTTP 429 · "Too many resend attempts. Try again later." · no new token generated</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-009</td><td><code>resend_verification(email)</code></td><td>Resend for already-verified email is gracefully rejected</td><td>POST /auth/resend-verification · email_verified=TRUE</td><td>HTTP 400 · "Email already verified" · no email sent</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-EMAIL-010</td><td><code>login(email, password)</code></td><td>Unverified user can log in but response includes verified=false flag</td><td>Valid credentials · email_verified=FALSE</td><td>HTTP 200 · profile returned · profile.email_verified=false · frontend shows verification banner</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 12. WALLET CENTS MODEL ══════════ -->
+<div class="section">
+  <div class="section-title">12. Wallet — Dollar-Cent Model (Scenario 1)</div>
+  <div class="section-sub">payment/wallet.py · WalletService · Integer cents · $0.20/report · $0.05/chat · 10 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-WALLET-001</td><td><code>WalletService.get_balance()</code></td><td>Balance for new unverified user is 0 cents</td><td>Newly registered user, email not verified</td><td>Returns 0 (int) · UI displays "$0.00"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-002</td><td><code>WalletService.credit()</code></td><td>Welcome credit adds exactly 20 cents on email verification</td><td>email_verified transitions TRUE · welcome_credit_cents=20</td><td>wallet_balance_cents=20 · transaction log entry: {type:"credit", amount:20, reason:"welcome"}</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-003</td><td><code>WalletService.debit()</code></td><td>Full reading deducts 20 cents from wallet</td><td>wallet_balance_cents=20 · REPORT_COST_CENTS=20</td><td>Returns (True, 0) · wallet_balance_cents=0 · transaction logged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-004</td><td><code>WalletService.debit()</code></td><td>Debit fails when balance insufficient</td><td>wallet_balance_cents=15 · REPORT_COST_CENTS=20</td><td>Returns (False, 15) · wallet_balance_cents unchanged · HTTP 402 from API</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-005</td><td><code>WalletService.debit()</code></td><td>Chat message deducts exactly 5 cents</td><td>wallet_balance_cents=20 · CHAT_COST_CENTS=5</td><td>Returns (True, 15) · wallet_balance_cents=15 · reason="chat_message" in log</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-006</td><td><code>WalletService.refund()</code></td><td>AI error triggers automatic refund of chat charge</td><td>5 cents deducted · AI call raises exception</td><td>wallet_balance_cents restored · log entry: {type:"refund", amount:5, reason:"ai_error"}</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-007</td><td><code>WalletService.topup()</code></td><td>Tier 1 top-up adds 100 cents</td><td>Verified payment · TOPUP_1_CENTS=100</td><td>wallet_balance_cents += 100 · log entry: {type:"topup", amount:100, gateway:"razorpay"}</td><td><span class="tag tag-int">Integration</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-008</td><td><code>WalletService.get_balance()</code></td><td>Balance never goes negative after race condition (concurrent debits)</td><td>Two simultaneous debit requests · balance=20 · each costs 20</td><td>Only one debit succeeds · other returns (False, 0) · final balance=0 not -20</td><td><span class="tag tag-perf">Performance</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-WALLET-009</td><td><code>wallet_transactions log</code></td><td>Transaction log is append-only and contains correct entries after multiple operations</td><td>credit 20 → debit 20 → credit 100 → debit 5</td><td>Log has 4 entries in order · running_balance values: 20, 0, 100, 95 · no entry modified</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-WALLET-010</td><td><code>UI display</code></td><td>Wallet badge renders integer cents as $X.XX</td><td>wallet_balance_cents=95</td><td>UI displays "$0.95" · wallet_balance_cents=100 → "$1.00" · cents=5 → "$0.05"</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 13. CHAT BILLING ══════════ -->
+<div class="section">
+  <div class="section-title">13. Chat Billing — AI Interpreter (Scenario 1)</div>
+  <div class="section-sub">backend/api/main.py · POST /kundli/chat/{session_id} · $0.05 per message · 8 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-CHAT-001</td><td><code>chat()</code></td><td>Registered user with sufficient balance can ask a chat question</td><td>wallet_balance_cents=20 · valid session · message="Tell me about my career"</td><td>HTTP 200 · AI response returned · wallet_balance_cents=15 · new_balance=15 in response</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-CHAT-002</td><td><code>chat()</code></td><td>Chat blocked with HTTP 402 when balance below 5 cents</td><td>wallet_balance_cents=4 · registered user</td><td>HTTP 402 · "Insufficient balance. Top up to continue." · no AI call made · balance unchanged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-CHAT-003</td><td><code>chat()</code></td><td>Guest user gets free chat up to GUEST_FREE_CHAT_LIMIT (3) messages</td><td>is_guest=True · 3 prior chat messages in session</td><td>4th message: HTTP 402 · "Register to continue chatting" · no AI call · guest cannot top up</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-CHAT-004</td><td><code>chat()</code></td><td>Safety-blocked message does NOT deduct credits</td><td>wallet_balance_cents=20 · message triggers safety filter</td><td>HTTP 200 with safety refusal · wallet_balance_cents=20 (unchanged) · no deduction logged</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-CHAT-005</td><td><code>chat()</code></td><td>AI error after deduction triggers automatic 5-cent refund</td><td>wallet_balance_cents=20 · AI raises RuntimeError mid-call</td><td>HTTP 500 · wallet_balance_cents=20 (refunded) · both debit and refund in transaction log</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-CHAT-006</td><td><code>chat()</code></td><td>Response JSON includes new_balance field for real-time UI update</td><td>Successful chat call · wallet_balance_cents=20 before</td><td>Response body contains "new_balance_cents": 15 · UI wallet badge updates without reload</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-CHAT-007</td><td><code>chat()</code></td><td>Multiple rapid chat messages each deduct 5 cents independently</td><td>wallet_balance_cents=20 · 4 sequential messages</td><td>Balances after each: 15, 10, 5, 0 · 5th message returns 402 · total deducted = 20 cents</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-CHAT-008</td><td><code>chat()</code></td><td>CHAT_COST_CENTS env override changes per-message cost</td><td>CHAT_COST_CENTS=10 in env · wallet_balance_cents=20</td><td>Single chat message deducts 10 cents · wallet_balance_cents=10 · second message deducts 10</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ══════════ 14. SUPER ADMIN ══════════ -->
+<div class="section">
+  <div class="section-title">14. Super Admin Panel (Scenario 2)</div>
+  <div class="section-sub">backend/api/main.py · /admin/* routes · HTTP Basic Auth · SQL runner · Log viewer · 12 test cases</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>TC ID</th><th>Function / Method</th><th>Description</th><th>Input / Preconditions</th><th>Expected Output</th><th>Type</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="tc-id">TC-ADMIN-001</td><td><code>GET /admin</code></td><td>Valid admin credentials return the dashboard HTML page</td><td>ADMIN_USERNAME=admin · ADMIN_PASSWORD=correct · Basic Auth header</td><td>HTTP 200 · Content-Type: text/html · page contains user count, reading stats</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-002</td><td><code>GET /admin</code></td><td>Wrong password returns 401 with WWW-Authenticate header</td><td>Correct username · wrong password</td><td>HTTP 401 · WWW-Authenticate: Basic realm="Admin" · no HTML body leaked</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-003</td><td><code>GET /admin</code></td><td>No credentials returns 401 (panel is not publicly accessible)</td><td>GET /admin with no Authorization header</td><td>HTTP 401 · WWW-Authenticate: Basic · no redirect to login page</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-004</td><td><code>POST /admin/query</code></td><td>Valid SELECT query returns result rows as JSON</td><td>SELECT email, wallet_balance_cents FROM users LIMIT 5</td><td>HTTP 200 · JSON array of rows · column names in response</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-005</td><td><code>POST /admin/query</code></td><td>Non-SELECT statement is blocked with 400</td><td>query="DELETE FROM users"</td><td>HTTP 400 · "Only SELECT queries are permitted" · no DB changes</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-006</td><td><code>POST /admin/query</code></td><td>SQL injection attempt in query is contained (parameterised execution)</td><td>query="SELECT * FROM users WHERE email='' OR 1=1--"</td><td>Query executes safely · returns only intended rows · no data exfiltration path</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-007</td><td><code>GET /admin/logs</code></td><td>Log endpoint returns last 500 lines of server log by default</td><td>Server log file has 1000 lines · ?lines not specified</td><td>HTTP 200 · JSON with 500 log lines · most recent last</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-008</td><td><code>POST /admin/wallet/adjust</code></td><td>Admin can manually credit 50 cents to a user with reason</td><td>{email:"user@x.com", delta_cents:50, reason:"manual compensation"}</td><td>HTTP 200 · wallet_balance_cents += 50 · admin_audit.log entry with admin name, action, reason</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-009</td><td><code>POST /admin/wallet/adjust</code></td><td>Adjust without reason (fewer than 10 chars) is rejected</td><td>{email:"user@x.com", delta_cents:50, reason:"ok"}</td><td>HTTP 400 · "Reason must be at least 10 characters" · wallet unchanged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-010</td><td><code>POST /admin/verify-email</code></td><td>Admin force-verifies a user email and grants welcome credit</td><td>{email:"unverified@x.com"} · email_verified=FALSE</td><td>HTTP 200 · email_verified=TRUE · wallet_balance_cents += WELCOME_CREDIT_CENTS · audit logged</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-high">High</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-011</td><td><code>GET /admin/stats</code></td><td>Stats endpoint returns correct aggregated counts</td><td>DB has 10 users (7 verified), 5 readings today, 200 cents issued</td><td>HTTP 200 · {total_users:10, verified:7, readings_today:5, credits_issued_cents:200}</td><td><span class="tag tag-unit">Unit</span></td><td class="pri-med">Medium</td></tr>
+      <tr><td class="tc-id">TC-ADMIN-012</td><td><code>Brute-force lockout</code></td><td>5 failed admin login attempts from same IP trigger lockout</td><td>5 consecutive wrong-password requests from IP 1.2.3.4</td><td>6th attempt: HTTP 429 · "Too many failed attempts" · lockout window 15 minutes · logged</td><td><span class="tag tag-sec">Security</span></td><td class="pri-high">High</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="doc-footer">
+  Vedic Astrology Platform — Unit Test Case Specification &nbsp;|&nbsp; Version 1.1 &nbsp;|&nbsp; Phase 1 &nbsp;|&nbsp; May 2026 &nbsp;|&nbsp; Confidential<br>
+  <span style="font-size:10px;margin-top:4px;display:block;">125 test cases across 14 modules · Sections 11–14 cover Scenario 1 (Email Verification, Wallet, Chat Billing) and Scenario 2 (Super Admin Panel)</span>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vedic Astrology Platform — Design Architecture (Phase 1)</title>
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #fffdf8;
+    --surface2: #ede8dc;
+    --border: #d4cab8;
+    --accent: #5b3dc8;
+    --accent2: #b87c10;
+    --accent3: #1e8c5a;
+    --accent4: #c0392b;
+    --accent5: #1a6e8a;
+    --text: #2c2416;
+    --muted: #6b5c44;
+    --heading: #3a2e1e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .page { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+
+  /* ── Header ── */
+  .doc-header {
+    text-align: center;
+    padding: 48px 24px 36px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .doc-header .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), #5b3dc8);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .doc-header h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--heading);
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .doc-header .subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .meta-item { font-size: 12px; color: var(--muted); }
+  .meta-item span { color: var(--heading); font-weight: 600; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 56px; }
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    border-left: 4px solid var(--accent);
+    padding-left: 14px;
+    margin-bottom: 24px;
+  }
+  .section-intro { color: var(--muted); margin-bottom: 20px; font-size: 13.5px; max-width: 860px; }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 48px;
+  }
+  .toc h2 { font-size: 1rem; font-weight: 700; color: var(--heading); margin-bottom: 16px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* ── Architecture layer diagram ── */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    overflow-x: auto;
+  }
+  .arch-layer {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+  }
+  .layer-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .layer-boxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .box {
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  /* Layer colors */
+  .l-client   { background: rgba(91,61,200,0.06);  border-color: rgba(91,61,200,0.25); }
+  .b-client   { background: rgba(91,61,200,0.12);  border-color: rgba(91,61,200,0.4);  color: #3a1f9e; }
+  .l-gateway  { background: rgba(26,110,138,0.06); border-color: rgba(26,110,138,0.25); }
+  .b-gateway  { background: rgba(26,110,138,0.12); border-color: rgba(26,110,138,0.4);  color: #0f4f66; }
+  .l-services { background: rgba(30,140,90,0.06);  border-color: rgba(30,140,90,0.25); }
+  .b-services { background: rgba(30,140,90,0.12);  border-color: rgba(30,140,90,0.4);  color: #0e5c38; }
+  .l-data     { background: rgba(184,124,16,0.07); border-color: rgba(184,124,16,0.3); }
+  .b-data     { background: rgba(184,124,16,0.14); border-color: rgba(184,124,16,0.4);  color: #6b4700; }
+  .l-infra    { background: rgba(192,57,43,0.06);  border-color: rgba(192,57,43,0.25); }
+  .b-infra    { background: rgba(192,57,43,0.12);  border-color: rgba(192,57,43,0.4);  color: #8b1c14; }
+  .l-ext      { background: rgba(100,90,70,0.06);  border-color: rgba(100,90,70,0.2); }
+  .b-ext      { background: rgba(100,90,70,0.12);  border-color: rgba(100,90,70,0.35); color: #4a3f2e; }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 18px;
+    margin: 2px 0;
+    line-height: 1;
+  }
+
+  /* ── Cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .card-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .card h3 { font-size: 13px; font-weight: 700; color: var(--heading); }
+  .card p  { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .card ul { margin: 8px 0 0 0; padding-left: 16px; }
+  .card ul li { font-size: 12px; color: var(--muted); margin: 3px 0; }
+  .card .tech-tag {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin: 3px 2px 0 0;
+  }
+
+  /* ── Flow diagram ── */
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    overflow-x: auto;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--heading);
+    white-space: nowrap;
+  }
+  .flow-arrow { color: var(--muted); font-size: 16px; }
+  .flow-note { font-size: 11px; color: var(--muted); margin-top: 4px; margin-left: 24px; }
+
+  /* ── Code/tree block ── */
+  .code-block {
+    background: #faf6ee;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+    overflow-x: auto;
+    color: var(--text);
+  }
+  .code-block .dir  { color: #2255aa; }
+  .code-block .file { color: #444; }
+  .code-block .cm   { color: #a09070; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--heading);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  td code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--accent5);
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-green  { background: rgba(30,140,90,0.1);   color: #0e5c38; border: 1px solid rgba(30,140,90,0.35); }
+  .tag-orange { background: rgba(184,124,16,0.12); color: #6b4700; border: 1px solid rgba(184,124,16,0.4); }
+  .tag-red    { background: rgba(192,57,43,0.1);   color: #8b1c14; border: 1px solid rgba(192,57,43,0.35); }
+  .tag-blue   { background: rgba(26,110,138,0.1);  color: #0f4f66; border: 1px solid rgba(26,110,138,0.35); }
+  .tag-purple { background: rgba(91,61,200,0.1);   color: #3a1f9e; border: 1px solid rgba(91,61,200,0.35); }
+
+  /* ── Security checklist ── */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── DB schema card ── */
+  .schema-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .schema-card-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .schema-card-body { padding: 0; }
+  .schema-field {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 0.7fr 2fr;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 11.5px;
+  }
+  .schema-field:last-child { border-bottom: none; }
+  .schema-field > div {
+    padding: 7px 12px;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+  }
+  .schema-field > div:last-child { border-right: none; }
+  .schema-field .col-name  { color: #0f4f66; font-family: monospace; font-size: 11px; }
+  .schema-field .col-type  { color: #6b4700; font-family: monospace; font-size: 11px; }
+  .schema-field .col-pk    { color: #8b1c14; font-family: monospace; font-size: 11px; }
+  .schema-field-header > div { background: rgba(255,255,255,0.04); font-weight: 700; color: var(--heading); font-size: 10.5px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* ── API table ── */
+  .api-method {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-family: monospace;
+  }
+  .method-get    { background: rgba(30,140,90,0.1);   color: #0e5c38; }
+  .method-post   { background: rgba(91,61,200,0.1);   color: #3a1f9e; }
+  .method-put    { background: rgba(184,124,16,0.12); color: #6b4700; }
+  .method-delete { background: rgba(192,57,43,0.1);   color: #8b1c14; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* ── Footer ── */
+  .doc-footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 32px 0 16px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <div class="doc-header">
+    <div class="badge">Design Architecture</div>
+    <h1>Vedic Astrology Platform</h1>
+    <p class="subtitle">Phase 1 — AI Core & Credit System<br>Full System Design Architecture Document</p>
+    <div class="meta-row">
+      <div class="meta-item">Version <span>1.0</span></div>
+      <div class="meta-item">Phase <span>1 of 3</span></div>
+      <div class="meta-item">Status <span>Design Review</span></div>
+      <div class="meta-item">Date <span>May 2026</span></div>
+      <div class="meta-item">Classification <span>Confidential</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════ TOC ══════════ -->
+  <div class="toc">
+    <h2>📋 Table of Contents</h2>
+    <ol>
+      <li><a href="#s1">System Architecture Overview</a></li>
+      <li><a href="#s2">Layered Architecture Diagram</a></li>
+      <li><a href="#s3">Microservice Definitions</a></li>
+      <li><a href="#s4">Codebase Folder & Module Structure</a></li>
+      <li><a href="#s5">Data Flow Diagrams</a></li>
+      <li><a href="#s6">Database Schema Design</a></li>
+      <li><a href="#s7">API Contract Reference</a></li>
+      <li><a href="#s8">Technology Stack</a></li>
+      <li><a href="#s9">Security Architecture</a></li>
+      <li><a href="#s10">Non-Functional Requirements Mapping</a></li>
+      <li><a href="#s11">Deployment & Infrastructure</a></li>
+    </ol>
+  </div>
+
+  <!-- ══════════ SECTION 1 ══════════ -->
+  <div class="section" id="s1">
+    <div class="section-title">1. System Architecture Overview</div>
+    <p class="section-intro">
+      The Vedic Astrology Platform is built as a cloud-native, microservices-based system deployed via container orchestration (Kubernetes). Each service is independently deployable, stateless, and horizontally scalable. The architecture is cleanly separated into six logical layers: <strong>Client Layer → API Gateway → Core Services → Data Layer → Infrastructure Layer → External Integrations</strong>. Per project requirements, the payment gateway, dasha calculation engine, and UI are fully isolated modules.
+    </p>
+
+    <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-top: 8px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(124,92,252,0.15)">🖥️</div>
+          <h3>Cross-Platform Clients</h3>
+        </div>
+        <p>React SPA (Web) + React Native (iOS/Android). Shared design system and i18n.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(86,180,211,0.15)">🔀</div>
+          <h3>API Gateway</h3>
+        </div>
+        <p>Single entry point for all clients. JWT auth, rate limiting, routing, WAF.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(62,207,142,0.15)">⚙️</div>
+          <h3>7 Core Microservices</h3>
+        </div>
+        <p>Auth, Kundli Engine, Dasha Engine, AI Interpretation, Credit Wallet, Payment, Analytics.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(232,168,56,0.15)">🗄️</div>
+          <h3>Polyglot Data Layer</h3>
+        </div>
+        <p>PostgreSQL (transactional), Redis (cache/sessions), S3 (reports), OpenSearch (analytics).</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">🔒</div>
+          <h3>Security First</h3>
+        </div>
+        <p>TLS 1.3, WAF, KMS, OWASP Top 10 hardened, PCI-DSS scope minimised via gateway-hosted card entry.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(140,140,160,0.15)">🔗</div>
+          <h3>External Integrations</h3>
+        </div>
+        <p>LLM provider (OpenAI / Anthropic), Swiss Ephemeris, Payment Gateway (Razorpay / Stripe), Firebase Push.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 2 ══════════ -->
+  <div class="section" id="s2">
+    <div class="section-title">2. Layered Architecture Diagram</div>
+    <div class="arch-diagram">
+
+      <div class="arch-layer l-client">
+        <div class="layer-label">① Client Layer</div>
+        <div class="layer-boxes">
+          <div class="box b-client">React SPA (Web)</div>
+          <div class="box b-client">React Native (iOS)</div>
+          <div class="box b-client">React Native (Android)</div>
+          <div class="box b-client">PWA (Offline Reports)</div>
+          <div class="box b-client">Admin Portal (React)</div>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇ HTTPS / TLS 1.3</div>
+
+      <div class="arch-layer l-infra" style="margin-bottom:4px;">
+        <div class="layer-label">② Edge / Security Layer</div>
+        <div class="layer-boxes">
+          <div class="box b-infra">CDN (CloudFront / Cloudflare)</div>
+          <div class="box b-infra">WAF (AWS WAF / Cloudflare WAF)</div>
+          <div class="box b-infra">DDoS Protection</div>
+          <div class="box b-infra">Load Balancer (ALB)</div>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+
+      <div class="arch-layer l-gateway">
+        <div class="layer-label">③ API Gateway Layer</div>
+        <div class="layer-boxes">
+          <div class="box b-gateway">API Gateway (Kong / AWS API GW)</div>
+          <div class="box b-gateway">JWT Auth Middleware</div>
+          <div class="box b-gateway">Rate Limiter</div>
+          <div class="box b-gateway">Request Router</div>
+          <div class="box b-gateway">i18n Header Injection</div>
+          <div class="box b-gateway">Request Logger</div>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇ Internal service mesh (mTLS)</div>
+
+      <div class="arch-layer l-services">
+        <div class="layer-label">④ Core Microservices Layer</div>
+        <div class="layer-boxes">
+          <div class="box b-services">auth-service</div>
+          <div class="box b-services">kundli-engine</div>
+          <div class="box b-services">dasha-engine</div>
+          <div class="box b-services">ai-interpretation-service</div>
+          <div class="box b-services">credit-wallet-service</div>
+          <div class="box b-services">payment-gateway-service</div>
+          <div class="box b-services">report-export-service</div>
+          <div class="box b-services">analytics-service</div>
+          <div class="box b-services">notification-service</div>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇</div>
+
+      <div class="arch-layer l-data">
+        <div class="layer-label">⑤ Data Layer</div>
+        <div class="layer-boxes">
+          <div class="box b-data">PostgreSQL (primary DB)</div>
+          <div class="box b-data">Redis (cache + sessions)</div>
+          <div class="box b-data">S3 / Object Storage (reports)</div>
+          <div class="box b-data">OpenSearch (analytics)</div>
+          <div class="box b-data">KMS (encryption keys)</div>
+          <div class="box b-data">Secrets Manager</div>
+          <div class="box b-data">Message Queue (SQS / RabbitMQ)</div>
+        </div>
+      </div>
+      <div class="arch-arrow">⬇ Outbound via egress control</div>
+
+      <div class="arch-layer l-ext">
+        <div class="layer-label">⑥ External Integrations</div>
+        <div class="layer-boxes">
+          <div class="box b-ext">LLM API (OpenAI / Anthropic)</div>
+          <div class="box b-ext">Swiss Ephemeris Library</div>
+          <div class="box b-ext">Payment Gateway (Razorpay / Stripe)</div>
+          <div class="box b-ext">UPI Aggregator</div>
+          <div class="box b-ext">Firebase FCM (Push)</div>
+          <div class="box b-ext">Email Provider (SES)</div>
+          <div class="box b-ext">IP Geolocation API</div>
+          <div class="box b-ext">OAuth Providers (Google / Apple)</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 3 ══════════ -->
+  <div class="section" id="s3">
+    <div class="section-title">3. Microservice Definitions</div>
+    <p class="section-intro">Each service owns its data, exposes REST APIs, and communicates with other services via the API Gateway or internal message queue for async operations.</p>
+
+    <div class="card-grid">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(124,92,252,0.15)">🔐</div>
+          <h3>auth-service</h3>
+        </div>
+        <p>Handles registration, login, OAuth (Google/Apple), 2FA/MFA, JWT issuance, session management.</p>
+        <ul>
+          <li>Access token: 15 min TTL</li>
+          <li>Refresh token: 7 day TTL (rotated)</li>
+          <li>Bcrypt password hashing</li>
+          <li>TOTP-based 2FA</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Node.js</span><span class="tech-tag">PostgreSQL</span><span class="tech-tag">Redis</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(62,207,142,0.15)">🔭</div>
+          <h3>kundli-engine</h3>
+        </div>
+        <p>Core astrological calculation engine. Computes Nirayan chart, divisional charts, Shadbala, yogas, Ashtakavarga.</p>
+        <ul>
+          <li>Swiss Ephemeris integration</li>
+          <li>Lahiri / Raman / KP Ayanamsa</li>
+          <li>North + South Indian chart styles</li>
+          <li>D1–D16 divisional charts</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Python</span><span class="tech-tag">FastAPI</span><span class="tech-tag">pyswisseph</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(62,207,142,0.15)">📅</div>
+          <h3>dasha-engine</h3>
+        </div>
+        <p>Computes all Dasha systems: Vimshottari, Yogini, Chara, Kalachakra, Narayana, Moola. Pluggable per-dasha modules.</p>
+        <ul>
+          <li>Mahadasha → Sookshma levels</li>
+          <li>Timeline JSON output</li>
+          <li>Transit (Gochara) correlation</li>
+          <li>Pluggable module interface</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Python</span><span class="tech-tag">FastAPI</span><span class="tech-tag">PostgreSQL</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(86,180,211,0.15)">🤖</div>
+          <h3>ai-interpretation-service</h3>
+        </div>
+        <p>Receives structured JSON from kundli/dasha engines, constructs locale-aware prompts, calls LLM, validates output.</p>
+        <ul>
+          <li>Anonymised prompts (no PII)</li>
+          <li>Deterministic validation layer</li>
+          <li>Conversational follow-up ("Ask Astrologer")</li>
+          <li>3 report types: Personal / Compatibility / Career</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Python</span><span class="tech-tag">FastAPI</span><span class="tech-tag">Redis cache</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(232,168,56,0.15)">💳</div>
+          <h3>credit-wallet-service</h3>
+        </div>
+        <p>Manages credit wallet lifecycle: balance checks, atomic deductions, refunds, promotional credits, ledger history.</p>
+        <ul>
+          <li>Atomic credit transactions (DB tx)</li>
+          <li>Promo credits consumed first</li>
+          <li>Auto-refund on AI failure (≤60s)</li>
+          <li>Low-balance alert trigger (≤3 credits)</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Node.js</span><span class="tech-tag">PostgreSQL</span><span class="tech-tag">SQS</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">💰</div>
+          <h3>payment-gateway-service</h3>
+        </div>
+        <p>PCI-DSS-scoped payment module. Handles card (3DS), UPI (VPA/QR), webhook receipt, geo-based pricing.</p>
+        <ul>
+          <li>Razorpay / Stripe adapters</li>
+          <li>Gateway-hosted card iframe (no card data on servers)</li>
+          <li>UPI deep-link intent flow</li>
+          <li>Idempotent webhook handler</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Node.js</span><span class="tech-tag">PostgreSQL</span><span class="tech-tag">Webhooks</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(124,92,252,0.15)">📄</div>
+          <h3>report-export-service</h3>
+        </div>
+        <p>Generates PDF, DOCX, JSON/CSV exports, shareable expirable links, and print-optimised layouts.</p>
+        <ul>
+          <li>PDF via WeasyPrint / Puppeteer</li>
+          <li>DOCX via python-docx (Pro users)</li>
+          <li>Signed S3 presigned URLs</li>
+          <li>Link expiry configurable</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Python</span><span class="tech-tag">S3</span><span class="tech-tag">WeasyPrint</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(232,168,56,0.15)">📊</div>
+          <h3>analytics-service</h3>
+        </div>
+        <p>Powers the Super Admin dashboard. Aggregates anonymised user traffic, feature usage, revenue, and system health metrics.</p>
+        <ul>
+          <li>OpenSearch for metrics storage</li>
+          <li>Real-time + historical views</li>
+          <li>CSV/Excel export</li>
+          <li>Weekly automated email report</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Python</span><span class="tech-tag">OpenSearch</span><span class="tech-tag">Celery</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(86,180,211,0.15)">🔔</div>
+          <h3>notification-service</h3>
+        </div>
+        <p>Dispatches push notifications (FCM), emails (SES), and in-app alerts for Dasha transitions, low balance, and receipts.</p>
+        <ul>
+          <li>Async via message queue</li>
+          <li>i18n-aware templates</li>
+          <li>Push + email + in-app</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tech-tag">Node.js</span><span class="tech-tag">Firebase FCM</span><span class="tech-tag">AWS SES</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 4 ══════════ -->
+  <div class="section" id="s4">
+    <div class="section-title">4. Codebase Folder & Module Structure</div>
+    <p class="section-intro">The repository is a monorepo with strict module separation. Each top-level folder is independently deployable. The payment gateway, dasha engine, kundli engine, and UI are fully isolated packages per project requirements.</p>
+
+    <div class="code-block">
+<span class="dir">vedic-astro-platform/</span>
+├── <span class="dir">apps/</span>                         <span class="cm"># Deployable application frontends</span>
+│   ├── <span class="dir">web/</span>                       <span class="cm"># React SPA (Vite + SSR)</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">components/</span>            <span class="cm"># Shared UI components (design system)</span>
+│   │   │   ├── <span class="dir">features/</span>
+│   │   │   │   ├── <span class="dir">auth/</span>               <span class="cm"># Login, register, 2FA screens</span>
+│   │   │   │   ├── <span class="dir">kundli/</span>             <span class="cm"># Birth data form, chart renderer (SVG)</span>
+│   │   │   │   ├── <span class="dir">dasha/</span>              <span class="cm"># Dasha timeline view</span>
+│   │   │   │   ├── <span class="dir">ai-reports/</span>         <span class="cm"># Report request, display, export</span>
+│   │   │   │   ├── <span class="dir">wallet/</span>             <span class="cm"># Credit balance, buy credits, history</span>
+│   │   │   │   └── <span class="dir">admin/</span>              <span class="cm"># Super Admin analytics portal</span>
+│   │   │   ├── <span class="dir">i18n/</span>                  <span class="cm"># en / hi / ta JSON bundles</span>
+│   │   │   ├── <span class="dir">hooks/</span>
+│   │   │   ├── <span class="dir">store/</span>                 <span class="cm"># Zustand / Redux slices</span>
+│   │   │   └── <span class="dir">utils/</span>
+│   │   └── <span class="file">package.json</span>
+│   │
+│   └── <span class="dir">mobile/</span>                    <span class="cm"># React Native (Expo)</span>
+│       ├── <span class="dir">src/</span>
+│       │   ├── <span class="dir">screens/</span>
+│       │   ├── <span class="dir">navigation/</span>
+│       │   ├── <span class="dir">components/</span>
+│       │   ├── <span class="dir">i18n/</span>
+│       │   └── <span class="dir">services/</span>              <span class="cm"># API client, push, biometrics</span>
+│       └── <span class="file">package.json</span>
+│
+├── <span class="dir">services/</span>                      <span class="cm"># Backend microservices (each independently deployable)</span>
+│   │
+│   ├── <span class="dir">auth-service/</span>              <span class="cm"># Node.js · Express · JWT</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">controllers/</span>
+│   │   │   ├── <span class="dir">middleware/</span>
+│   │   │   ├── <span class="dir">models/</span>
+│   │   │   └── <span class="dir">utils/</span>
+│   │   ├── <span class="file">Dockerfile</span>
+│   │   └── <span class="file">package.json</span>
+│   │
+│   ├── <span class="dir">kundli-engine/</span>             <span class="cm"># Python · FastAPI · pyswisseph (isolated library)</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">calculator/</span>            <span class="cm"># Core planetary computation logic</span>
+│   │   │   │   ├── <span class="file">ephemeris.py</span>       <span class="cm"># Swiss Ephemeris wrapper</span>
+│   │   │   │   ├── <span class="file">ayanamsa.py</span>        <span class="cm"># Lahiri / Raman / KP support</span>
+│   │   │   │   ├── <span class="file">houses.py</span>          <span class="cm"># Ascendant & house computation</span>
+│   │   │   │   ├── <span class="file">divisional.py</span>      <span class="cm"># D1–D16 charts</span>
+│   │   │   │   ├── <span class="file">shadbala.py</span>        <span class="cm"># Six-fold strength</span>
+│   │   │   │   ├── <span class="file">ashtakavarga.py</span>    <span class="cm"># Eight-source benefic points</span>
+│   │   │   │   └── <span class="file">yogas.py</span>           <span class="cm"># Yoga detection engine</span>
+│   │   │   ├── <span class="dir">api/</span>                   <span class="cm"># FastAPI routes & schemas</span>
+│   │   │   └── <span class="dir">tests/</span>                 <span class="cm"># ≥80% unit test coverage required</span>
+│   │   ├── <span class="file">Dockerfile</span>
+│   │   └── <span class="file">requirements.txt</span>
+│   │
+│   ├── <span class="dir">dasha-engine/</span>              <span class="cm"># Python · FastAPI — SEPARATE module per SRS §5.4</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">systems/</span>               <span class="cm"># Pluggable dasha system modules</span>
+│   │   │   │   ├── <span class="file">vimshottari.py</span>
+│   │   │   │   ├── <span class="file">yogini.py</span>
+│   │   │   │   ├── <span class="file">chara.py</span>
+│   │   │   │   ├── <span class="file">kalachakra.py</span>
+│   │   │   │   ├── <span class="file">narayana.py</span>
+│   │   │   │   └── <span class="file">moola.py</span>
+│   │   │   ├── <span class="dir">timeline/</span>              <span class="cm"># Mahadasha → Sookshma timeline builder</span>
+│   │   │   ├── <span class="dir">transit/</span>               <span class="cm"># Gochara (transit) correlation</span>
+│   │   │   ├── <span class="dir">api/</span>
+│   │   │   └── <span class="dir">tests/</span>
+│   │   ├── <span class="file">Dockerfile</span>
+│   │   └── <span class="file">requirements.txt</span>
+│   │
+│   ├── <span class="dir">ai-interpretation-service/</span> <span class="cm"># Python · FastAPI</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">prompt_builder/</span>        <span class="cm"># Locale-aware prompt construction</span>
+│   │   │   ├── <span class="dir">validators/</span>            <span class="cm"># Deterministic astro consistency checks</span>
+│   │   │   ├── <span class="dir">llm_client/</span>            <span class="cm"># Provider-agnostic LLM adapter</span>
+│   │   │   ├── <span class="dir">report_types/</span>          <span class="cm"># personal / compatibility / career</span>
+│   │   │   └── <span class="dir">api/</span>
+│   │   ├── <span class="file">Dockerfile</span>
+│   │   └── <span class="file">requirements.txt</span>
+│   │
+│   ├── <span class="dir">credit-wallet-service/</span>     <span class="cm"># Node.js · Express</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">wallet/</span>                <span class="cm"># Balance, deduct, refund, promo logic</span>
+│   │   │   ├── <span class="dir">ledger/</span>                <span class="cm"># Immutable audit ledger</span>
+│   │   │   ├── <span class="dir">alerts/</span>                <span class="cm"># Low-balance notification triggers</span>
+│   │   │   └── <span class="dir">api/</span>
+│   │   ├── <span class="file">Dockerfile</span>
+│   │   └── <span class="file">package.json</span>
+│   │
+│   ├── <span class="dir">payment-gateway-service/</span>   <span class="cm"># SEPARATE module — Node.js · Express (PCI-DSS scoped)</span>
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">adapters/</span>              <span class="cm"># Provider adapters (strategy pattern)</span>
+│   │   │   │   ├── <span class="file">razorpay.adapter.js</span>
+│   │   │   │   └── <span class="file">stripe.adapter.js</span>
+│   │   │   ├── <span class="dir">upi/</span>                   <span class="cm"># UPI VPA, QR, deep-link flow</span>
+│   │   │   ├── <span class="dir">webhooks/</span>              <span class="cm"># Idempotent webhook handlers</span>
+│   │   │   ├── <span class="dir">geo-pricing/</span>           <span class="cm"># INR / USD / EUR pricing lookup</span>
+│   │   │   └── <span class="dir">api/</span>
+│   │   ├── <span class="file">Dockerfile</span>
+│   │   └── <span class="file">package.json</span>
+│   │
+│   ├── <span class="dir">report-export-service/</span>     <span class="cm"># Python · FastAPI</span>
+│   ├── <span class="dir">analytics-service/</span>         <span class="cm"># Python · FastAPI · Celery</span>
+│   └── <span class="dir">notification-service/</span>      <span class="cm"># Node.js · SQS consumer</span>
+│
+├── <span class="dir">packages/</span>                      <span class="cm"># Shared internal libraries (NPM / PyPI packages)</span>
+│   ├── <span class="dir">shared-types/</span>              <span class="cm"># TypeScript interfaces shared by web + mobile + services</span>
+│   ├── <span class="dir">design-system/</span>             <span class="cm"># Shared component library (Storybook)</span>
+│   └── <span class="dir">astro-core-lib/</span>            <span class="cm"># Pure Python: kundli + dasha as standalone library (SRS §5.6)</span>
+│
+├── <span class="dir">infrastructure/</span>                <span class="cm"># Infrastructure-as-Code (IaC)</span>
+│   ├── <span class="dir">terraform/</span>                 <span class="cm"># AWS / GCP resource definitions</span>
+│   ├── <span class="dir">k8s/</span>                       <span class="cm"># Kubernetes manifests per service</span>
+│   │   ├── <span class="dir">deployments/</span>
+│   │   ├── <span class="dir">services/</span>
+│   │   ├── <span class="dir">ingress/</span>
+│   │   └── <span class="dir">secrets/</span>               <span class="cm"># External Secrets Operator → Secrets Manager</span>
+│   └── <span class="dir">helm/</span>                      <span class="cm"># Helm charts for each service</span>
+│
+├── <span class="dir">ci-cd/</span>                         <span class="cm"># GitHub Actions / GitLab CI pipelines</span>
+│   ├── <span class="file">.github/workflows/</span>
+│   └── <span class="file">scripts/</span>
+│
+└── <span class="file">turbo.json</span>                     <span class="cm"># Turborepo pipeline config</span>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 5 ══════════ -->
+  <div class="section" id="s5">
+    <div class="section-title">5. Data Flow Diagrams</div>
+
+    <p style="font-weight:600; color:var(--heading); margin-bottom:12px; font-size:13px;">5.1 — AI Report Generation Flow (Credit-Gated)</p>
+    <div class="flow-diagram" style="margin-bottom:24px;">
+      <div class="flow-row">
+        <div class="flow-step">User selects report type</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">UI calls credit-wallet-service</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Balance sufficient?</div>
+      </div>
+      <div class="flow-note">❌ Insufficient → Block generation → Show balance, credits required, "Buy Credits" CTA</div>
+      <div style="height:12px"></div>
+      <div class="flow-row">
+        <div class="flow-step">✅ Sufficient → User confirms</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Atomic credit deduction (DB tx)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Call kundli-engine (JSON payload)</div>
+      </div>
+      <div class="flow-note">Birth data → planetary positions, houses, yogas, divisional charts, Shadbala</div>
+      <div style="height:12px"></div>
+      <div class="flow-row">
+        <div class="flow-step">Call dasha-engine</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Dasha timeline + Gochara JSON</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">ai-interpretation-service</div>
+      </div>
+      <div class="flow-note">Prompt builder constructs locale-aware prompt → Validation layer → LLM API call</div>
+      <div style="height:12px"></div>
+      <div class="flow-row">
+        <div class="flow-step">LLM returns interpretation</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Deterministic validation</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Return to frontend</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Display + post-balance summary</div>
+      </div>
+      <div class="flow-note">✅ Success: credits consumed permanently | ❌ AI failure: auto-refund within 60 seconds → notification-service alert</div>
+    </div>
+
+    <p style="font-weight:600; color:var(--heading); margin-bottom:12px; font-size:13px;">5.2 — Credit Purchase Flow (Card / UPI)</p>
+    <div class="flow-diagram" style="margin-bottom:24px;">
+      <div class="flow-row">
+        <div class="flow-step">User taps "Buy Credits"</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Select credit pack</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Geo-pricing lookup (INR / USD)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Order summary + tax display</div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="flow-row">
+        <div class="flow-step">Card selected</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Gateway-hosted iframe (no card data on platform)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">3D Secure OTP</div>
+      </div>
+      <div class="flow-row" style="margin-top:8px;">
+        <div class="flow-step">UPI selected</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">VPA entry or QR scan → UPI app deep-link</div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="flow-row">
+        <div class="flow-step">Gateway webhook received (idempotent)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">payment-gateway-service validates</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Instructs credit-wallet-service via SQS</div>
+      </div>
+      <div class="flow-note">Atomic credit add to wallet → UI balance refresh within 5 seconds → Email receipt via notification-service</div>
+    </div>
+
+    <p style="font-weight:600; color:var(--heading); margin-bottom:12px; font-size:13px;">5.3 — User Registration & Onboarding Flow</p>
+    <div class="flow-diagram">
+      <div class="flow-row">
+        <div class="flow-step">Email/Password or OAuth (Google/Apple)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">auth-service validates + issues JWT</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Language selection</div>
+      </div>
+      <div class="flow-row" style="margin-top:8px;">
+        <div class="flow-step">IP geolocation → region detection</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">credit-wallet-service creates wallet</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Promo credits awarded (if applicable)</div>
+      </div>
+      <div class="flow-note">2FA/MFA setup prompt → Profile creation → First Kundli profile entry</div>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 6 ══════════ -->
+  <div class="section" id="s6">
+    <div class="section-title">6. Database Schema Design</div>
+    <p class="section-intro">PostgreSQL is the primary transactional database. Each microservice owns its schema (logical separation via PostgreSQL schemas or separate databases). All sensitive fields are encrypted at rest via KMS.</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+      <div class="schema-card">
+        <div class="schema-card-header">👤 users</div>
+        <div class="schema-card-body">
+          <div class="schema-field schema-field-header"><div>Column</div><div>Type</div><div>Key</div><div>Notes</div></div>
+          <div class="schema-field"><div class="col-name">id</div><div class="col-type">UUID</div><div class="col-pk">PK</div><div>Auto-generated</div></div>
+          <div class="schema-field"><div class="col-name">email</div><div class="col-type">VARCHAR</div><div class="col-pk">UQ</div><div>Encrypted at rest</div></div>
+          <div class="schema-field"><div class="col-name">password_hash</div><div class="col-type">TEXT</div><div class="col-pk"></div><div>bcrypt, nullable for OAuth</div></div>
+          <div class="schema-field"><div class="col-name">role</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>general / professional / super_admin</div></div>
+          <div class="schema-field"><div class="col-name">language_pref</div><div class="col-type">VARCHAR(5)</div><div class="col-pk"></div><div>en / hi / ta</div></div>
+          <div class="schema-field"><div class="col-name">region</div><div class="col-type">VARCHAR(10)</div><div class="col-pk"></div><div>IN / US / EU etc.</div></div>
+          <div class="schema-field"><div class="col-name">mfa_enabled</div><div class="col-type">BOOLEAN</div><div class="col-pk"></div><div>Default false</div></div>
+          <div class="schema-field"><div class="col-name">mfa_secret</div><div class="col-type">TEXT</div><div class="col-pk"></div><div>TOTP secret, encrypted</div></div>
+          <div class="schema-field"><div class="col-name">created_at</div><div class="col-type">TIMESTAMPTZ</div><div class="col-pk"></div><div>Immutable</div></div>
+        </div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-header">🔭 kundli_profiles</div>
+        <div class="schema-card-body">
+          <div class="schema-field schema-field-header"><div>Column</div><div>Type</div><div>Key</div><div>Notes</div></div>
+          <div class="schema-field"><div class="col-name">id</div><div class="col-type">UUID</div><div class="col-pk">PK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">user_id</div><div class="col-type">UUID</div><div class="col-pk">FK</div><div>→ users.id</div></div>
+          <div class="schema-field"><div class="col-name">name</div><div class="col-type">VARCHAR</div><div class="col-pk"></div><div>Profile name (encrypted)</div></div>
+          <div class="schema-field"><div class="col-name">dob</div><div class="col-type">DATE</div><div class="col-pk"></div><div>Date of birth</div></div>
+          <div class="schema-field"><div class="col-name">tob</div><div class="col-type">TIME</div><div class="col-pk"></div><div>Time of birth</div></div>
+          <div class="schema-field"><div class="col-name">timezone</div><div class="col-type">VARCHAR</div><div class="col-pk"></div><div>IANA tz string</div></div>
+          <div class="schema-field"><div class="col-name">latitude</div><div class="col-type">NUMERIC(9,6)</div><div class="col-pk"></div><div>Birth place lat</div></div>
+          <div class="schema-field"><div class="col-name">longitude</div><div class="col-type">NUMERIC(9,6)</div><div class="col-pk"></div><div>Birth place lon</div></div>
+          <div class="schema-field"><div class="col-name">ayanamsa</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>lahiri / raman / kp</div></div>
+        </div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-header">💳 credit_wallets</div>
+        <div class="schema-card-body">
+          <div class="schema-field schema-field-header"><div>Column</div><div>Type</div><div>Key</div><div>Notes</div></div>
+          <div class="schema-field"><div class="col-name">id</div><div class="col-type">UUID</div><div class="col-pk">PK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">user_id</div><div class="col-type">UUID</div><div class="col-pk">FK, UQ</div><div>One wallet per user</div></div>
+          <div class="schema-field"><div class="col-name">paid_balance</div><div class="col-type">INTEGER</div><div class="col-pk"></div><div>Purchased credits</div></div>
+          <div class="schema-field"><div class="col-name">promo_balance</div><div class="col-type">INTEGER</div><div class="col-pk"></div><div>Promotional credits</div></div>
+          <div class="schema-field"><div class="col-name">updated_at</div><div class="col-type">TIMESTAMPTZ</div><div class="col-pk"></div><div>Optimistic locking</div></div>
+        </div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-header">📒 wallet_ledger</div>
+        <div class="schema-card-body">
+          <div class="schema-field schema-field-header"><div>Column</div><div>Type</div><div>Key</div><div>Notes</div></div>
+          <div class="schema-field"><div class="col-name">id</div><div class="col-type">UUID</div><div class="col-pk">PK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">wallet_id</div><div class="col-type">UUID</div><div class="col-pk">FK</div><div>→ credit_wallets</div></div>
+          <div class="schema-field"><div class="col-name">type</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>purchase / consumed / refund / promo</div></div>
+          <div class="schema-field"><div class="col-name">credits_delta</div><div class="col-type">INTEGER</div><div class="col-pk"></div><div>+/- value</div></div>
+          <div class="schema-field"><div class="col-name">report_type</div><div class="col-type">VARCHAR</div><div class="col-pk"></div><div>Nullable; set on consumption</div></div>
+          <div class="schema-field"><div class="col-name">balance_after</div><div class="col-type">INTEGER</div><div class="col-pk"></div><div>Running balance snapshot</div></div>
+          <div class="schema-field"><div class="col-name">created_at</div><div class="col-type">TIMESTAMPTZ</div><div class="col-pk"></div><div>Write-once (immutable)</div></div>
+        </div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-header">💰 payment_orders</div>
+        <div class="schema-card-body">
+          <div class="schema-field schema-field-header"><div>Column</div><div>Type</div><div>Key</div><div>Notes</div></div>
+          <div class="schema-field"><div class="col-name">id</div><div class="col-type">UUID</div><div class="col-pk">PK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">user_id</div><div class="col-type">UUID</div><div class="col-pk">FK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">gateway_order_id</div><div class="col-type">VARCHAR</div><div class="col-pk">UQ</div><div>Gateway reference</div></div>
+          <div class="schema-field"><div class="col-name">pack_id</div><div class="col-type">VARCHAR</div><div class="col-pk"></div><div>starter / standard / pro</div></div>
+          <div class="schema-field"><div class="col-name">credits</div><div class="col-type">INTEGER</div><div class="col-pk"></div><div>Credits to be awarded</div></div>
+          <div class="schema-field"><div class="col-name">amount</div><div class="col-type">NUMERIC(10,2)</div><div class="col-pk"></div><div>Amount in local currency</div></div>
+          <div class="schema-field"><div class="col-name">currency</div><div class="col-type">CHAR(3)</div><div class="col-pk"></div><div>INR / USD / EUR</div></div>
+          <div class="schema-field"><div class="col-name">method</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>card / upi</div></div>
+          <div class="schema-field"><div class="col-name">status</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>pending / success / failed</div></div>
+        </div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-header">🤖 ai_reports</div>
+        <div class="schema-card-body">
+          <div class="schema-field schema-field-header"><div>Column</div><div>Type</div><div>Key</div><div>Notes</div></div>
+          <div class="schema-field"><div class="col-name">id</div><div class="col-type">UUID</div><div class="col-pk">PK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">user_id</div><div class="col-type">UUID</div><div class="col-pk">FK</div><div></div></div>
+          <div class="schema-field"><div class="col-name">profile_id</div><div class="col-type">UUID</div><div class="col-pk">FK</div><div>→ kundli_profiles</div></div>
+          <div class="schema-field"><div class="col-name">report_type</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>personal / compatibility / career</div></div>
+          <div class="schema-field"><div class="col-name">language</div><div class="col-type">VARCHAR(5)</div><div class="col-pk"></div><div>en / hi / ta</div></div>
+          <div class="schema-field"><div class="col-name">credits_consumed</div><div class="col-type">INTEGER</div><div class="col-pk"></div><div></div></div>
+          <div class="schema-field"><div class="col-name">status</div><div class="col-type">ENUM</div><div class="col-pk"></div><div>generating / completed / failed</div></div>
+          <div class="schema-field"><div class="col-name">storage_key</div><div class="col-type">TEXT</div><div class="col-pk"></div><div>S3 object key</div></div>
+          <div class="schema-field"><div class="col-name">share_token</div><div class="col-type">VARCHAR</div><div class="col-pk">UQ</div><div>Nullable; set on share</div></div>
+          <div class="schema-field"><div class="col-name">share_expires_at</div><div class="col-type">TIMESTAMPTZ</div><div class="col-pk"></div><div>Nullable</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 7 ══════════ -->
+  <div class="section" id="s7">
+    <div class="section-title">7. API Contract Reference</div>
+    <p class="section-intro">All APIs are REST over HTTPS. Requests require <code>Authorization: Bearer &lt;JWT&gt;</code> unless marked Public. Language preference is passed via <code>Accept-Language</code> header.</p>
+
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Auth</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5" style="background:rgba(124,92,252,0.08); color:#a98fff; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">AUTH SERVICE</td></tr>
+        <tr><td>auth</td><td><span class="api-method method-post">POST</span></td><td><code>/auth/register</code></td><td><span class="tag tag-blue">Public</span></td><td>Email/password registration</td></tr>
+        <tr><td>auth</td><td><span class="api-method method-post">POST</span></td><td><code>/auth/login</code></td><td><span class="tag tag-blue">Public</span></td><td>Returns access + refresh tokens</td></tr>
+        <tr><td>auth</td><td><span class="api-method method-post">POST</span></td><td><code>/auth/oauth/{provider}</code></td><td><span class="tag tag-blue">Public</span></td><td>Google / Apple OAuth callback</td></tr>
+        <tr><td>auth</td><td><span class="api-method method-post">POST</span></td><td><code>/auth/refresh</code></td><td><span class="tag tag-green">Token</span></td><td>Refresh access token</td></tr>
+        <tr><td>auth</td><td><span class="api-method method-post">POST</span></td><td><code>/auth/mfa/setup</code></td><td><span class="tag tag-green">JWT</span></td><td>Enable TOTP 2FA</td></tr>
+        <tr><td>auth</td><td><span class="api-method method-post">POST</span></td><td><code>/auth/logout</code></td><td><span class="tag tag-green">JWT</span></td><td>Invalidate session</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(62,207,142,0.08); color:#3ecf8e; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">KUNDLI ENGINE</td></tr>
+        <tr><td>kundli</td><td><span class="api-method method-post">POST</span></td><td><code>/kundli/calculate</code></td><td><span class="tag tag-green">JWT</span></td><td>Compute full Nirayan chart (D1–D16, yogas, Shadbala)</td></tr>
+        <tr><td>kundli</td><td><span class="api-method method-get">GET</span></td><td><code>/kundli/profiles</code></td><td><span class="tag tag-green">JWT</span></td><td>List user's saved Kundli profiles</td></tr>
+        <tr><td>kundli</td><td><span class="api-method method-post">POST</span></td><td><code>/kundli/profiles</code></td><td><span class="tag tag-green">JWT</span></td><td>Create/save Kundli profile</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(62,207,142,0.08); color:#3ecf8e; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">DASHA ENGINE</td></tr>
+        <tr><td>dasha</td><td><span class="api-method method-post">POST</span></td><td><code>/dasha/calculate</code></td><td><span class="tag tag-green">JWT</span></td><td>Body: { profile_id, system: "vimshottari" | "yogini" | … }</td></tr>
+        <tr><td>dasha</td><td><span class="api-method method-get">GET</span></td><td><code>/dasha/current/{profile_id}</code></td><td><span class="tag tag-green">JWT</span></td><td>Returns active Mahadasha + Antardasha</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(86,180,211,0.08); color:#56b4d3; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">AI INTERPRETATION</td></tr>
+        <tr><td>ai</td><td><span class="api-method method-post">POST</span></td><td><code>/ai/report/generate</code></td><td><span class="tag tag-green">JWT</span></td><td>Body: { profile_id, report_type, language }. Credit-gated.</td></tr>
+        <tr><td>ai</td><td><span class="api-method method-get">GET</span></td><td><code>/ai/report/{report_id}</code></td><td><span class="tag tag-green">JWT</span></td><td>Fetch generated report</td></tr>
+        <tr><td>ai</td><td><span class="api-method method-post">POST</span></td><td><code>/ai/report/{report_id}/ask</code></td><td><span class="tag tag-green">JWT</span></td><td>"Ask the Astrologer" follow-up question</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(232,168,56,0.08); color:#e8a838; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">CREDIT WALLET</td></tr>
+        <tr><td>wallet</td><td><span class="api-method method-get">GET</span></td><td><code>/wallet/balance</code></td><td><span class="tag tag-green">JWT</span></td><td>Returns paid_balance + promo_balance + total</td></tr>
+        <tr><td>wallet</td><td><span class="api-method method-get">GET</span></td><td><code>/wallet/ledger</code></td><td><span class="tag tag-green">JWT</span></td><td>Full transaction history (paginated)</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(240,106,106,0.08); color:#f06a6a; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">PAYMENT GATEWAY</td></tr>
+        <tr><td>payment</td><td><span class="api-method method-get">GET</span></td><td><code>/payment/packs</code></td><td><span class="tag tag-green">JWT</span></td><td>List geo-priced credit packs for user's region</td></tr>
+        <tr><td>payment</td><td><span class="api-method method-post">POST</span></td><td><code>/payment/order</code></td><td><span class="tag tag-green">JWT</span></td><td>Create payment order; returns gateway order_id</td></tr>
+        <tr><td>payment</td><td><span class="api-method method-post">POST</span></td><td><code>/payment/webhook</code></td><td><span class="tag tag-orange">Sig</span></td><td>Gateway webhook (HMAC-verified, idempotent)</td></tr>
+        <tr><td>payment</td><td><span class="api-method method-get">GET</span></td><td><code>/payment/history</code></td><td><span class="tag tag-green">JWT</span></td><td>Purchase history + receipts</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(124,92,252,0.08); color:#a98fff; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">REPORT EXPORT</td></tr>
+        <tr><td>export</td><td><span class="api-method method-post">POST</span></td><td><code>/export/{report_id}/pdf</code></td><td><span class="tag tag-green">JWT</span></td><td>Returns presigned S3 URL for PDF download</td></tr>
+        <tr><td>export</td><td><span class="api-method method-post">POST</span></td><td><code>/export/{report_id}/share</code></td><td><span class="tag tag-green">JWT</span></td><td>Generates expirable view-only share link</td></tr>
+
+        <tr><td colspan="5" style="background:rgba(232,168,56,0.08); color:#e8a838; font-weight:700; font-size:11px; padding:6px 14px; letter-spacing:0.5px">ANALYTICS (Super Admin only)</td></tr>
+        <tr><td>analytics</td><td><span class="api-method method-get">GET</span></td><td><code>/admin/analytics/traffic</code></td><td><span class="tag tag-red">Admin</span></td><td>User traffic metrics with date range filter</td></tr>
+        <tr><td>analytics</td><td><span class="api-method method-get">GET</span></td><td><code>/admin/analytics/revenue</code></td><td><span class="tag tag-red">Admin</span></td><td>Revenue + credit pack breakdown</td></tr>
+        <tr><td>analytics</td><td><span class="api-method method-get">GET</span></td><td><code>/admin/analytics/system-health</code></td><td><span class="tag tag-red">Admin</span></td><td>p50/p95/p99 latency, error rates, uptime</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 8 ══════════ -->
+  <div class="section" id="s8">
+    <div class="section-title">8. Technology Stack</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Technology</th><th>Rationale</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Web Frontend</strong></td><td>React 18, Vite, SSR (Next.js or Astro)</td><td>SPA + SSR for SEO; PWA support; SVG chart rendering</td></tr>
+        <tr><td><strong>Mobile</strong></td><td>React Native (Expo), Expo Notifications</td><td>Shared codebase, iOS + Android, biometrics, UPI deep-link</td></tr>
+        <tr><td><strong>Design System</strong></td><td>Tailwind CSS, Radix UI, Storybook</td><td>Consistent tokens, WCAG 2.1 AA, multi-script fonts</td></tr>
+        <tr><td><strong>State Management</strong></td><td>Zustand + React Query</td><td>Lightweight client state + server-state caching</td></tr>
+        <tr><td><strong>i18n</strong></td><td>react-i18next, JSON bundles</td><td>Reactive language switch, Devanagari + Tamil Unicode fonts</td></tr>
+        <tr><td><strong>API Gateway</strong></td><td>Kong Gateway (or AWS API Gateway)</td><td>Rate limiting, JWT validation, routing, observability</td></tr>
+        <tr><td><strong>Auth Service</strong></td><td>Node.js, Express, Passport.js, speakeasy (TOTP)</td><td>Mature OAuth libraries, fast JWT ops</td></tr>
+        <tr><td><strong>Kundli Engine</strong></td><td>Python, FastAPI, pyswisseph</td><td>pyswisseph is the Python binding for Swiss Ephemeris (gold standard)</td></tr>
+        <tr><td><strong>Dasha Engine</strong></td><td>Python, FastAPI</td><td>Isolated module; pluggable dasha system architecture</td></tr>
+        <tr><td><strong>AI Interpretation</strong></td><td>Python, FastAPI, LangChain (optional)</td><td>Provider-agnostic LLM adapter; prompt templating</td></tr>
+        <tr><td><strong>Credit Wallet</strong></td><td>Node.js, Express, PostgreSQL transactions</td><td>Atomic DB transactions for credit integrity</td></tr>
+        <tr><td><strong>Payment Gateway</strong></td><td>Node.js, Razorpay SDK / Stripe SDK</td><td>Gateway-hosted card entry; UPI intent; PCI-DSS minimised scope</td></tr>
+        <tr><td><strong>Report Export</strong></td><td>Python, WeasyPrint (PDF), python-docx</td><td>High-fidelity PDF from HTML; DOCX for Pro users</td></tr>
+        <tr><td><strong>Analytics</strong></td><td>Python, Celery, OpenSearch</td><td>Async aggregation; full-text search; Kibana dashboards</td></tr>
+        <tr><td><strong>Primary DB</strong></td><td>PostgreSQL 16 (RDS / Cloud SQL)</td><td>ACID, row-level security, point-in-time recovery</td></tr>
+        <tr><td><strong>Cache / Sessions</strong></td><td>Redis 7 (ElastiCache)</td><td>Session tokens, rate limiting counters, hot chart caching</td></tr>
+        <tr><td><strong>Object Storage</strong></td><td>AWS S3 / GCS</td><td>Generated PDF/DOCX reports; signed URL access</td></tr>
+        <tr><td><strong>Message Queue</strong></td><td>AWS SQS (or RabbitMQ)</td><td>Async wallet credit after payment webhook; notification dispatch</td></tr>
+        <tr><td><strong>Secrets</strong></td><td>AWS Secrets Manager + KMS</td><td>No secrets in code; AES-256 key management</td></tr>
+        <tr><td><strong>Container Orchestration</strong></td><td>Kubernetes (EKS / GKE)</td><td>Horizontal scaling, rolling deploys, health checks</td></tr>
+        <tr><td><strong>CI/CD</strong></td><td>GitHub Actions, Docker</td><td>Automated build, test, dependency scan, deploy pipeline</td></tr>
+        <tr><td><strong>Monitoring</strong></td><td>Prometheus + Grafana, AWS CloudWatch</td><td>p50/p95/p99 latency, error rate dashboards, alerting</td></tr>
+        <tr><td><strong>Push Notifications</strong></td><td>Firebase FCM</td><td>iOS + Android push; Dasha transition alerts</td></tr>
+        <tr><td><strong>Email</strong></td><td>AWS SES</td><td>Receipts, low-balance alerts, weekly admin digest</td></tr>
+        <tr><td><strong>CDN / WAF</strong></td><td>CloudFront + AWS WAF (or Cloudflare)</td><td>DDoS, SQLi/XSS blocking, global edge delivery</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 9 ══════════ -->
+  <div class="section" id="s9">
+    <div class="section-title">9. Security Architecture</div>
+    <p class="section-intro">Security is non-negotiable per SRS §5.7. The following controls map directly to the SRS critical security requirements.</p>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">🗄️</div>
+          <h3>Database Security (§5.7.1)</h3>
+        </div>
+        <ul class="checklist" style="margin-top:8px;">
+          <li><span class="check-icon">🔒</span>Private subnet; no public DB ports exposed</li>
+          <li><span class="check-icon">🔑</span>AES-256 at rest; KMS-managed keys</li>
+          <li><span class="check-icon">👤</span>Least-privilege DB roles per service</li>
+          <li><span class="check-icon">🛡️</span>ORM/parameterised queries only; no raw SQL concat</li>
+          <li><span class="check-icon">📋</span>Immutable audit log; 12-month retention</li>
+          <li><span class="check-icon">🔄</span>Daily encrypted backups; quarterly restore test</li>
+          <li><span class="check-icon">🚫</span>No production data in dev/test environments</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">🔧</div>
+          <h3>Application Security (§5.7.2)</h3>
+        </div>
+        <ul class="checklist" style="margin-top:8px;">
+          <li><span class="check-icon">📋</span>OWASP Top 10 audit before each phase go-live</li>
+          <li><span class="check-icon">🔐</span>JWT on all endpoints; unauthenticated = register/login/public dir only</li>
+          <li><span class="check-icon">⏱️</span>Rate limiting on all endpoints; lockout on repeated auth failures</li>
+          <li><span class="check-icon">✅</span>Server-side input validation on ALL user data</li>
+          <li><span class="check-icon">🔑</span>Secrets in Secrets Manager vault; never in code or env plain text</li>
+          <li><span class="check-icon">🔍</span>CVE dependency scanning in CI/CD pipeline</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">🌐</div>
+          <h3>Network Security (§5.7.3)</h3>
+        </div>
+        <ul class="checklist" style="margin-top:8px;">
+          <li><span class="check-icon">🔐</span>TLS 1.3 minimum; TLS 1.0/1.1 disabled; HTTP rejected</li>
+          <li><span class="check-icon">🛡️</span>WAF deployed in front of all public services</li>
+          <li><span class="check-icon">☁️</span>DDoS protection at edge (CloudFront/Cloudflare)</li>
+          <li><span class="check-icon">🏗️</span>Network segmentation: public edge → app tier → data tier</li>
+          <li><span class="check-icon">📝</span>IaC review for all infra changes; no ad-hoc production changes</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">🔑</div>
+          <h3>Identity & Access (§5.7.5)</h3>
+        </div>
+        <ul class="checklist" style="margin-top:8px;">
+          <li><span class="check-icon">📱</span>MFA available to all users; mandatory for admins and astrologers</li>
+          <li><span class="check-icon">⏱️</span>Access token: 15 min; Refresh token: 7 days; invalidated on logout/password change</li>
+          <li><span class="check-icon">👥</span>Quarterly admin access review</li>
+          <li><span class="check-icon">📋</span>All privileged admin actions require 2FA + audit log entry</li>
+          <li><span class="check-icon">💳</span>PCI-DSS scope: card data never touches platform servers (gateway-hosted iframe)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;" class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(240,106,106,0.15)">🧪</div>
+        <h3>Security Testing & Incident Response (§5.7.6)</h3>
+      </div>
+      <p style="color:var(--muted); font-size:12.5px; margin-top:4px;">Third-party pentest before Phase 1 go-live (critical/high findings must be remediated first). Automated vulnerability scan on every production deployment. Documented incident response plan (detect → contain → eradicate → recover → notify). Breach notification to affected users within 72 hours (GDPR Phase 2+). AI LLM prompts must be anonymised — no PII in raw LLM API calls.</p>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 10 ══════════ -->
+  <div class="section" id="s10">
+    <div class="section-title">10. Non-Functional Requirements Mapping</div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>NFR</th><th>Target</th><th>Implementation</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Kundli chart generation latency</td><td>&lt; 3 seconds</td><td>pyswisseph optimised; Redis caching for repeated birth data</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>AI report generation latency</td><td>&lt; 30 seconds</td><td>Streaming LLM response; async job with SSE push to client</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Page load (FCP, 4G)</td><td>&lt; 2.5 seconds</td><td>CDN edge delivery, code splitting, SSR, lazy loading</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Concurrent users (Phase 1)</td><td>1,000+</td><td>Stateless services, horizontal pod autoscaling (K8s HPA)</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Uptime SLA (Phase 1)</td><td>99.5% monthly</td><td>Multi-AZ deployment; graceful degradation if AI unavailable</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Credit deduction atomicity</td><td>No partial writes</td><td>PostgreSQL transactions with rollback on AI failure</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Credit refund on AI failure</td><td>≤ 60 seconds</td><td>Async SQS + wallet-service refund handler</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Credit balance UI refresh after purchase</td><td>≤ 5 seconds</td><td>WebSocket or SSE push from wallet-service after webhook confirmation</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Unit test coverage (calc engine)</td><td>≥ 80%</td><td>pytest suites on kundli-engine and dasha-engine modules</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Language switch (reactive)</td><td>No page reload</td><td>react-i18next with in-memory bundle; re-render on locale change</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>Accessibility</td><td>WCAG 2.1 AA</td><td>ARIA labels, keyboard navigation, 4.5:1 contrast, SVG alt text</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>DB backup RPO / RTO</td><td>RPO 24h / RTO 4h</td><td>RDS automated daily snapshots; PITR enabled (7-day window)</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>New language support</td><td>No code changes</td><td>i18n JSON bundles only; language resource files injected at runtime</td><td><span class="tag tag-orange">Design</span></td></tr>
+        <tr><td>New dasha system addition</td><td>No core modification</td><td>Pluggable module interface in dasha-engine/src/systems/</td><td><span class="tag tag-orange">Design</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 11 ══════════ -->
+  <div class="section" id="s11">
+    <div class="section-title">11. Deployment & Infrastructure</div>
+    <p class="section-intro">All infrastructure is defined as code (Terraform). Deployments use Helm charts on Kubernetes. No manual changes to production are permitted.</p>
+
+    <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(62,207,142,0.15)">☁️</div>
+          <h3>Cloud & Kubernetes</h3>
+        </div>
+        <p>AWS (primary) or GCP. EKS for container orchestration. Each microservice in its own Deployment + Service. HPA for autoscaling. External Secrets Operator syncs secrets from Secrets Manager.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(86,180,211,0.15)">🔀</div>
+          <h3>CI/CD Pipeline</h3>
+        </div>
+        <p>GitHub Actions: build → lint → unit tests → dependency CVE scan → Docker build → push to ECR → Helm deploy. Rolling updates with readiness probes. Automated rollback on failure.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(232,168,56,0.15)">📊</div>
+          <h3>Observability</h3>
+        </div>
+        <p>Prometheus metrics scraped from each service. Grafana dashboards for p50/p95/p99 latency, error rates, pod health. CloudWatch log aggregation. PagerDuty alerting on SLA breach.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(124,92,252,0.15)">🌍</div>
+          <h3>Network Zones</h3>
+        </div>
+        <p><strong>Zone A (Public):</strong> CloudFront CDN + WAF + ALB. <strong>Zone B (App):</strong> K8s pods — API Gateway + microservices. <strong>Zone C (Data):</strong> RDS PostgreSQL + ElastiCache Redis (private subnet, no public access).</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,106,106,0.15)">🔄</div>
+          <h3>Environments</h3>
+        </div>
+        <p>Three environments: <strong>Dev</strong> (feature branches), <strong>Staging</strong> (integration + pentest), <strong>Production</strong> (blue/green deploy). No prod data in dev/staging. Synthetic data sets for testing.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(62,207,142,0.15)">📋</div>
+          <h3>IaC & Compliance</h3>
+        </div>
+        <p>Terraform for all cloud resources. Terraform plan reviewed in PR before apply. GDPR-compliant data residency tagging. DPDP Act compliance for Indian user data. PCI-DSS scope limited to payment-gateway-service only.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SECTION 12 ══════════ -->
+  <div class="section" id="s12">
+    <div class="section-title">12. Scenario 1 — Email Verification, Wallet Economics &amp; Chat Billing</div>
+    <p class="section-intro">Covers the full lifecycle from registration to first paid interaction: email ownership proof, dollar-cent wallet model, per-report and per-chat-message billing.</p>
+
+    <!-- 12.1 Email Verification Flow -->
+    <h3 style="color:var(--accent);margin:28px 0 12px;font-size:1.05rem;">12.1 Email Verification Flow</h3>
+    <table class="data-table">
+      <thead><tr><th>Step</th><th>Actor</th><th>Action / System Behaviour</th><th>DB Change</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>User</td><td>Submits registration form (name, email, password)</td><td><code>email_verified = FALSE</code>, <code>verification_token</code> stored (UUID, 24-hour TTL), <code>wallet_balance_cents = 0</code></td></tr>
+        <tr><td>2</td><td>System</td><td>Sends verification email via SMTP (Gmail / SendGrid). If SMTP credentials absent, link is printed to server console for dev/test.</td><td>—</td></tr>
+        <tr><td>3</td><td>User</td><td>Clicks link: <code>GET /auth/verify-email?token=&lt;uuid&gt;</code></td><td><code>email_verified = TRUE</code>, token cleared, <code>wallet_balance_cents += 20</code> (welcome credit)</td></tr>
+        <tr><td>4</td><td>System</td><td>Returns success page; frontend shows "$0.20 credited to your wallet — enough for your first reading!"</td><td>—</td></tr>
+        <tr><td>5</td><td>System</td><td>If token expired or not found, returns 400 with "Verification link expired. Request a new one."</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid" style="grid-template-columns:1fr 1fr;margin-top:24px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(91,61,200,0.12)">📧</div>
+          <h3>Email Service Module</h3>
+        </div>
+        <p><strong>Location:</strong> <code>backend/auth/email_service.py</code></p>
+        <p style="margin-top:8px;"><strong>SMTP config (via .env):</strong></p>
+        <ul style="margin-top:6px;padding-left:18px;font-size:13px;">
+          <li><code>EMAIL_HOST</code> — e.g. smtp.gmail.com</li>
+          <li><code>EMAIL_PORT</code> — 587 (STARTTLS)</li>
+          <li><code>EMAIL_USER</code> — sender address</li>
+          <li><code>EMAIL_PASSWORD</code> — app password</li>
+          <li><code>EMAIL_FROM_NAME</code> — display name</li>
+          <li><code>APP_BASE_URL</code> — for link generation</li>
+        </ul>
+        <p style="margin-top:8px;font-size:13px;">Mock mode (no SMTP): prints link to <code>stdout</code>.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(30,140,90,0.12)">🔐</div>
+          <h3>Token Security</h3>
+        </div>
+        <ul style="padding-left:18px;font-size:13px;">
+          <li>Token: <code>uuid.uuid4()</code> — 128-bit random</li>
+          <li>TTL: 24 hours from registration</li>
+          <li>One-time use: cleared immediately on verification</li>
+          <li>Resend endpoint: <code>POST /auth/resend-verification</code></li>
+          <li>Rate-limited: max 3 resend requests per hour per email</li>
+          <li>Unverified users can still log in but see banner prompting verification</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 12.2 Wallet Economics -->
+    <h3 style="color:var(--accent);margin:28px 0 12px;font-size:1.05rem;">12.2 Wallet Economics — Dollar-Cent Model</h3>
+    <p style="margin-bottom:14px;color:var(--muted);font-size:13px;">All balances are stored as <strong>integer cents</strong> (avoids floating-point errors). UI renders as <strong>$X.XX</strong>. Actual AI cost per report is estimated at $0.20 based on Claude Sonnet token pricing at 8,192 output tokens; this figure is configurable via env vars and should be re-evaluated monthly.</p>
+    <table class="data-table">
+      <thead><tr><th>Event</th><th>Amount</th><th>Cents (stored)</th><th>Config Key</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Welcome credit (on email verify)</td><td>+$0.20</td><td>+20</td><td><code>WELCOME_CREDIT_CENTS</code></td><td>Enough for exactly one full reading</td></tr>
+        <tr><td>Full kundli reading (Steps 1–2)</td><td>−$0.20</td><td>−20</td><td><code>REPORT_COST_CENTS</code></td><td>Deducted before AI call; refunded on AI error</td></tr>
+        <tr><td>Chat message to AI Interpreter</td><td>−$0.05</td><td>−5</td><td><code>CHAT_COST_CENTS</code></td><td>Deducted per message; chat is NOT free</td></tr>
+        <tr><td>Top-up Tier 1</td><td>+$1.00</td><td>+100</td><td><code>TOPUP_1_CENTS</code></td><td>Allows 5 readings or 20 chat messages</td></tr>
+        <tr><td>Top-up Tier 2</td><td>+$3.00</td><td>+300</td><td><code>TOPUP_2_CENTS</code></td><td>15 readings or 60 chat messages</td></tr>
+        <tr><td>Guest users</td><td>$0.00</td><td>0</td><td>—</td><td>Bypass billing; cannot top up</td></tr>
+      </tbody>
+    </table>
+
+    <!-- 12.3 Chat Billing -->
+    <h3 style="color:var(--accent);margin:28px 0 12px;font-size:1.05rem;">12.3 Chat Billing — AI Interpreter</h3>
+    <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:0;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(192,57,43,0.12)">💬</div>
+          <h3>Per-Message Deduction</h3>
+        </div>
+        <p>Before each AI chat response, <strong>5 cents are deducted</strong> from the user's wallet. If balance &lt; 5 cents, API returns <code>HTTP 402</code> with message: "Insufficient balance. Top up to continue chatting."</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(26,110,138,0.12)">🔄</div>
+          <h3>Refund on AI Error</h3>
+        </div>
+        <p>If the AI call fails after deduction (network error, timeout, content filter), the 5-cent charge is automatically refunded. A <code>wallet_transaction</code> log entry records both the debit and the refund.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(184,124,16,0.12)">👤</div>
+          <h3>Guest Users</h3>
+        </div>
+        <p>Guest sessions bypass all billing checks. Guests have no wallet and cannot top up. After 3 free AI responses (configurable via <code>GUEST_FREE_CHAT_LIMIT</code>), guests see an upsell prompt to register.</p>
+      </div>
+    </div>
+
+    <!-- 12.4 New DB Columns -->
+    <h3 style="color:var(--accent);margin:28px 0 12px;font-size:1.05rem;">12.4 New Database Columns (Migration)</h3>
+    <table class="data-table">
+      <thead><tr><th>Column</th><th>Type</th><th>Default</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>email_verified</code></td><td>BOOLEAN</td><td>FALSE</td><td>Gates welcome credit; shown in admin panel</td></tr>
+        <tr><td><code>verification_token</code></td><td>TEXT</td><td>NULL</td><td>UUID sent in verification email</td></tr>
+        <tr><td><code>verification_token_expires</code></td><td>DATETIME</td><td>NULL</td><td>Token expiry (24 hours after register)</td></tr>
+        <tr><td><code>wallet_balance_cents</code></td><td>INTEGER</td><td>0</td><td>Replaces integer credit units; stored in cents</td></tr>
+        <tr><td><code>wallet_transactions</code></td><td>TEXT (JSON)</td><td>'[]'</td><td>Append-only audit log of credits/debits</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════ SECTION 13 ══════════ -->
+  <div class="section" id="s13">
+    <div class="section-title">13. Scenario 2 — Super Admin Panel</div>
+    <p class="section-intro">A server-rendered HTML panel accessible only to platform administrators. Credentials are set via environment variables — no database table required.</p>
+
+    <div class="card-grid" style="grid-template-columns:1fr 1fr;margin-bottom:24px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(91,61,200,0.12)">🔑</div>
+          <h3>Authentication</h3>
+        </div>
+        <ul style="padding-left:18px;font-size:13px;">
+          <li>HTTP Basic Auth via FastAPI <code>HTTPBasic</code> dependency</li>
+          <li>Credentials: <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code> in <code>.env</code></li>
+          <li>Constant-time comparison prevents timing attacks</li>
+          <li>All admin routes return <code>401 WWW-Authenticate: Basic</code> on failure</li>
+          <li>No session tokens — each request re-authenticates</li>
+          <li>Admin routes are under <code>/admin/*</code> prefix, excluded from public API schema</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(30,140,90,0.12)">📋</div>
+          <h3>Panel Features</h3>
+        </div>
+        <ul style="padding-left:18px;font-size:13px;">
+          <li>User list: email, name, verified status, wallet balance, created date</li>
+          <li>Read-only SQL query runner (SELECT only; non-SELECT blocked)</li>
+          <li>Application log viewer (last 500 lines of server log)</li>
+          <li>Manual wallet credit/debit per user</li>
+          <li>Force email verification for a user</li>
+          <li>Delete user account</li>
+          <li>System stats: total users, total credits issued, readings served today</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="color:var(--accent);margin:0 0 12px;font-size:1.05rem;">Admin API Endpoints</h3>
+    <table class="data-table">
+      <thead><tr><th>Method</th><th>Route</th><th>Description</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag" style="background:#1e8c5a;color:#fff">GET</span></td><td><code>/admin</code></td><td>Admin dashboard HTML page</td><td>Server-rendered; shows stats + user table</td></tr>
+        <tr><td><span class="tag" style="background:#1e8c5a;color:#fff">GET</span></td><td><code>/admin/users</code></td><td>JSON list of all users</td><td>Paginated; supports <code>?search=email</code></td></tr>
+        <tr><td><span class="tag" style="background:#5b3dc8;color:#fff">POST</span></td><td><code>/admin/query</code></td><td>Execute read-only SQL query</td><td>SELECT only; returns rows as JSON</td></tr>
+        <tr><td><span class="tag" style="background:#1e8c5a;color:#fff">GET</span></td><td><code>/admin/logs</code></td><td>Last N lines of server log</td><td>Default 500; configurable via <code>?lines=N</code></td></tr>
+        <tr><td><span class="tag" style="background:#5b3dc8;color:#fff">POST</span></td><td><code>/admin/wallet/adjust</code></td><td>Credit or debit user wallet manually</td><td>Body: <code>{email, delta_cents, reason}</code></td></tr>
+        <tr><td><span class="tag" style="background:#5b3dc8;color:#fff">POST</span></td><td><code>/admin/verify-email</code></td><td>Force email verification for user</td><td>Body: <code>{email}</code></td></tr>
+        <tr><td><span class="tag" style="background:#c0392b;color:#fff">DELETE</span></td><td><code>/admin/user/{email}</code></td><td>Delete user account and all data</td><td>Requires confirmation token in body</td></tr>
+        <tr><td><span class="tag" style="background:#1e8c5a;color:#fff">GET</span></td><td><code>/admin/stats</code></td><td>Platform statistics (JSON)</td><td>Users, readings today, total credits issued</td></tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:24px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(192,57,43,0.12)">🛡️</div>
+          <h3>Security Constraints</h3>
+        </div>
+        <ul style="padding-left:18px;font-size:13px;">
+          <li>SQL runner: SELECT-only; blocked keywords: INSERT, UPDATE, DELETE, DROP, ATTACH</li>
+          <li>Log viewer: read-only; no shell command execution</li>
+          <li>All admin actions are written to a separate <code>admin_audit.log</code></li>
+          <li>Admin panel not linked from public UI</li>
+          <li>Brute-force protection: lockout after 5 failed attempts per IP (15-min window)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(26,110,138,0.12)">📊</div>
+          <h3>Dashboard Stats</h3>
+        </div>
+        <ul style="padding-left:18px;font-size:13px;">
+          <li>Total registered users</li>
+          <li>Verified vs unverified count</li>
+          <li>Readings generated today / this week</li>
+          <li>Total wallet credits issued (cents)</li>
+          <li>Active sessions (last 24 hours)</li>
+          <li>Top-up revenue (cents collected)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(184,124,16,0.12)">⚙️</div>
+          <h3>Env-var Config</h3>
+        </div>
+        <ul style="padding-left:18px;font-size:13px;">
+          <li><code>ADMIN_USERNAME</code> — admin login name</li>
+          <li><code>ADMIN_PASSWORD</code> — strong password (min 16 chars)</li>
+          <li><code>ADMIN_LOG_PATH</code> — path to server log file</li>
+          <li><code>ADMIN_AUDIT_LOG</code> — path for admin action audit log</li>
+          <li>No default — panel is disabled if vars not set</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <p>Vedic Astrology Platform — Phase 1 Design Architecture &nbsp;|&nbsp; Version 1.1 &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; May 2026</p>
+    <p style="margin-top:6px; font-size:11px;">Updated with Scenario 1 (Email Verification, Wallet Economics, Chat Billing) and Scenario 2 (Super Admin Panel). Previous sections 1–11 unchanged.</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+.env
+*.db
+*.db-journal
+__pycache__/
+*.pyc
+.git/
+.github/
+*.log
+narayan_astro.log
+admin_audit.log
+node_modules/
+.venv/
+venv/

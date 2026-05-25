@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NarayanAstroReader — Phase-1 & Architecture Compliance Audit v5</title>
+<style>
+  :root {
+    --green:  #16a34a; --green-bg:  #f0fdf4; --green-border:  #bbf7d0;
+    --red:    #dc2626; --red-bg:    #fef2f2; --red-border:    #fecaca;
+    --amber:  #d97706; --amber-bg:  #fffbeb; --amber-border:  #fde68a;
+    --blue:   #2563eb; --blue-bg:   #eff6ff; --blue-border:   #bfdbfe;
+    --gray:   #6b7280; --gray-bg:   #f9fafb; --gray-border:   #e5e7eb;
+    --purple: #7c3aed; --purple-bg: #f5f3ff; --purple-border: #ddd6fe;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.6; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%); color: white; border-radius: 16px; padding: 2.5rem 2rem; margin-bottom: 2rem; }
+  .header h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.4rem; }
+  .header p { opacity: 0.8; font-size: 0.95rem; margin-bottom: 0.25rem; }
+  .header-meta { display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .header-meta span { background: rgba(255,255,255,0.15); border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+  /* Score cards */
+  .scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .score-card { background: white; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .score-card .pct { font-size: 2.5rem; font-weight: 900; }
+  .score-card .label { font-size: 0.8rem; color: #64748b; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .score-card .sub { font-size: 0.85rem; color: #94a3b8; margin-top: 0.5rem; }
+  .score-green { color: var(--green); }
+  .score-amber { color: var(--amber); }
+  .score-red   { color: var(--red); }
+  .score-blue  { color: var(--blue); }
+
+  /* Progress bar */
+  .progress-section { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .progress-section h2 { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 1.25rem; }
+  .bar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+  .bar-label { width: 230px; font-size: 0.82rem; color: #475569; flex-shrink: 0; }
+  .bar-wrap  { flex: 1; background: #e2e8f0; border-radius: 99px; height: 10px; }
+  .bar-fill  { height: 10px; border-radius: 99px; background: var(--green); }
+  .bar-pct   { width: 40px; font-size: 0.82rem; font-weight: 700; text-align: right; }
+
+  /* Section */
+  .section { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 1.5rem; overflow: hidden; }
+  .section-header { padding: 1.1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+  .section-header h2 { font-size: 1rem; font-weight: 700; }
+  .section-body { padding: 0; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th { background: #f8fafc; padding: 0.65rem 1rem; text-align: left; font-weight: 600; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e8f0; }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  /* Status badges */
+  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.73rem; font-weight: 700; white-space: nowrap; }
+  .badge-done    { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+  .badge-partial { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); }
+  .badge-missing { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+  .badge-na      { background: var(--gray-bg);   color: var(--gray);   border: 1px solid var(--gray-border); }
+  .badge-critical{ background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 900; }
+
+  /* Priority matrix */
+  .priority-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; padding: 1.5rem; }
+  .priority-col { border-radius: 10px; padding: 1.1rem; }
+  .priority-col.red    { background: var(--red-bg);    border: 1px solid var(--red-border); }
+  .priority-col.amber  { background: var(--amber-bg);  border: 1px solid var(--amber-border); }
+  .priority-col.green  { background: var(--green-bg);  border: 1px solid var(--green-border); }
+  .priority-col h3 { font-size: 0.85rem; font-weight: 800; margin-bottom: 0.75rem; }
+  .priority-col h3.red   { color: var(--red); }
+  .priority-col h3.amber { color: var(--amber); }
+  .priority-col h3.green { color: var(--green); }
+  .priority-col ul { list-style: none; }
+  .priority-col ul li { font-size: 0.8rem; padding: 0.3rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); color: #374151; }
+  .priority-col ul li:last-child { border-bottom: none; }
+
+  /* Architecture gap block */
+  .arch-block { padding: 1.5rem; }
+  .arch-block h3 { font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+  .gap-item { display: flex; gap: 0.75rem; margin-bottom: 0.65rem; align-items: flex-start; }
+  .gap-icon { width: 20px; flex-shrink: 0; font-size: 0.85rem; margin-top: 0.1rem; }
+  .gap-text  { font-size: 0.83rem; color: #374151; }
+  .gap-text strong { color: #1e293b; }
+
+  /* Callout */
+  .callout { border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 1.5rem; font-size: 0.85rem; }
+  .callout.blue   { background: var(--blue-bg);   border-left: 4px solid var(--blue);   color: #1e40af; }
+  .callout.amber  { background: var(--amber-bg);  border-left: 4px solid var(--amber);  color: #92400e; }
+  .callout.red    { background: var(--red-bg);    border-left: 4px solid var(--red);    color: #991b1b; }
+  .callout.green  { background: var(--green-bg);  border-left: 4px solid var(--green);  color: #166534; }
+  .callout.purple { background: var(--purple-bg); border-left: 4px solid var(--purple); color: #4c1d95; }
+
+  /* Summary footer */
+  .footer { text-align: center; margin-top: 2.5rem; font-size: 0.8rem; color: #94a3b8; }
+
+  @media (max-width: 700px) {
+    .priority-grid { grid-template-columns: 1fr; }
+    .header-meta { gap: 0.75rem; }
+    .bar-label { width: 160px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ─────────────────── HEADER ─────────────────── -->
+<div class="header">
+  <h1>NarayanAstroReader — Phase-1 &amp; Architecture Compliance Audit v5</h1>
+  <p>Fresh codebase inspection against Phase-1 AI Core SRS and Design Architecture Specification</p>
+  <p style="opacity:0.6;font-size:0.8rem">Previous audit (v4): 73% SRS · 48% Arch → v5 reflects current codebase state</p>
+  <div class="header-meta">
+    <span>📅 Audit Date: 7 May 2026</span>
+    <span>📄 SRS: Phase1_AI_Core_SRS.docx</span>
+    <span>🏗 Arch: design_architecture.html</span>
+    <span>🔍 Method: Full file-system + code inspection</span>
+  </div>
+</div>
+
+<!-- ─────────────────── SCORES ─────────────────── -->
+<div class="scores">
+  <div class="score-card">
+    <div class="pct score-amber">73%</div>
+    <div class="label">Overall SRS Compliance</div>
+    <div class="sub">59 ✅ · 14 ⚠️ · 8 ❌</div>
+  </div>
+  <div class="score-card">
+    <div class="pct score-red">42%</div>
+    <div class="label">Architecture Spec Compliance</div>
+    <div class="sub">Monolith vs full microservices</div>
+  </div>
+  <div class="score-card">
+    <div class="pct score-red">0%</div>
+    <div class="label">services/ Independent Deployment</div>
+    <div class="sub">Skeletons only — no runnable services</div>
+  </div>
+  <div class="score-card">
+    <div class="pct score-green">100%</div>
+    <div class="label">Core Authentication Stack</div>
+    <div class="sub">JWT · MFA · OAuth · Lockout</div>
+  </div>
+</div>
+
+<!-- ─────────────────── PROGRESS BARS ─────────────────── -->
+<div class="progress-section">
+  <h2>📊 SRS Compliance by Feature Area</h2>
+  <div class="bar-row"><span class="bar-label">FR 3.1 — User Onboarding &amp; Profile</span><div class="bar-wrap"><div class="bar-fill" style="width:75%"></div></div><span class="bar-pct score-amber">75%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 3.2 — Kundli Generation Engine</span><div class="bar-wrap"><div class="bar-fill" style="width:70%"></div></div><span class="bar-pct score-amber">70%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 3.3 — Dasha System Engine</span><div class="bar-wrap"><div class="bar-fill" style="width:85%"></div></div><span class="bar-pct score-green">85%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 3.4 — AI Interpretation</span><div class="bar-wrap"><div class="bar-fill" style="width:88%"></div></div><span class="bar-pct score-green">88%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 3.5 — Report Export &amp; Sharing</span><div class="bar-wrap"><div class="bar-fill" style="width:75%"></div></div><span class="bar-pct score-amber">75%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 3.9 — Credit Wallet &amp; Payments</span><div class="bar-wrap"><div class="bar-fill" style="width:78%"></div></div><span class="bar-pct score-amber">78%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 3.10 — Super Admin Analytics</span><div class="bar-wrap"><div class="bar-fill" style="width:68%"></div></div><span class="bar-pct score-amber">68%</span></div>
+  <div class="bar-row"><span class="bar-label">FR 4 — Multi-Language &amp; i18n</span><div class="bar-wrap"><div class="bar-fill" style="width:72%"></div></div><span class="bar-pct score-amber">72%</span></div>
+  <div class="bar-row"><span class="bar-label">NFR 5.2/5.7 — Security</span><div class="bar-wrap"><div class="bar-fill" style="width:76%"></div></div><span class="bar-pct score-amber">76%</span></div>
+  <div class="bar-row"><span class="bar-label">Architecture Microservices Structure</span><div class="bar-wrap"><div class="bar-fill" style="width:42%;background:#f59e0b"></div></div><span class="bar-pct score-amber">42%</span></div>
+</div>
+
+<!-- ─────────────────── FR 3.1 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🔐 FR 3.1 — User Onboarding &amp; Profile Management</h2>
+    <span class="badge badge-partial">75% — 3 Gaps</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>Email/password registration with bcrypt</td><td>3.1.1</td><td><span class="badge badge-done">✅ Done</span></td><td>POST /auth/register · bcrypt hashing · email verification flow complete</td></tr>
+      <tr><td>Email verification before account activation</td><td>3.1.1</td><td><span class="badge badge-done">✅ Done</span></td><td>/auth/verify-email · token stored in DB · welcome credit on verify</td></tr>
+      <tr><td>Google OAuth sign-in</td><td>3.1.1</td><td><span class="badge badge-done">✅ Done</span></td><td>oauth_google.py · /auth/oauth/google · GSI frontend script integrated</td></tr>
+      <tr><td><strong>Apple OAuth sign-in</strong></td><td>3.1.1</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No Apple Sign-In backend module. Requires Apple Developer account + separate callback handler.</td></tr>
+      <tr><td>Two-Factor Authentication (TOTP/MFA)</td><td>3.1.1</td><td><span class="badge badge-done">✅ Done</span></td><td>mfa.py — pyotp TOTP · QR code · 10 backup codes · /auth/mfa/* endpoints · confirmed working</td></tr>
+      <tr><td>Language selection during onboarding</td><td>3.1.1</td><td><span class="badge badge-done">✅ Done</span></td><td>preferred_language column in users table · UI language selector with 3 locales</td></tr>
+      <tr><td>Multiple Kundli profiles per user</td><td>3.1.2</td><td><span class="badge badge-done">✅ Done</span></td><td>kundli_profiles table · full CRUD API /profiles/* · activate/switch · frontend panel</td></tr>
+      <tr><td>Profile stores name, DOB, TOB, timezone, birth place (encrypted)</td><td>3.1.2</td><td><span class="badge badge-done">✅ Done</span></td><td>Fernet encryption on all 4 PII fields · field_encryption.py handles legacy rows</td></tr>
+      <tr><td>Password reset flow</td><td>3.1.1</td><td><span class="badge badge-done">✅ Done</span></td><td>/auth/forgot-password + /auth/reset-password with time-limited token</td></tr>
+      <tr><td><strong>Gender field in profile</strong></td><td>3.1.2</td><td><span class="badge badge-missing">❌ Missing</span></td><td>SRS requires gender. Not present in users or kundli_profiles schema. Not in frontend form either.</td></tr>
+      <tr><td><strong>Professional astrologer dashboard + client list</strong></td><td>3.1.2</td><td><span class="badge badge-missing">❌ Missing</span></td><td>user_type column exists but no astrologer-specific UI, client management, or separate routing.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 3.2 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🔭 FR 3.2 — Kundli Generation Engine</h2>
+    <span class="badge badge-partial">70% — 3 Gaps, 3 Partials</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>Lagna + 9 planets in degrees/signs/houses (Nirayan)</td><td>3.2.1</td><td><span class="badge badge-done">✅ Done</span></td><td>PyJHora engine · Lahiri Ayanamsa · full rasi_chart output in /kundli/start</td></tr>
+      <tr><td>Configurable Ayanamsa (Lahiri default, Raman, KP)</td><td>3.2.1</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Lahiri applied automatically. Raman/KP not user-selectable via UI or API parameter.</td></tr>
+      <tr><td>D9 Navamsa + D10 Dasamsa charts</td><td>3.2.1</td><td><span class="badge badge-done">✅ Done</span></td><td>Included in PyJHora output; stub_kundli also includes D9/D10 fields</td></tr>
+      <tr><td>D2 Hora, D3 Dreshkana, D7 Saptamsa, D8 Ashtamsa, D16 Shodashavarga</td><td>3.2.1</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Delegated to PyJHora — depends on that library's chart support. Not explicitly verified or surfaced in API response structure.</td></tr>
+      <tr><td>North Indian (diamond) + South Indian (square) chart display</td><td>3.2.1</td><td><span class="badge badge-done">✅ Done</span></td><td>kundli_chart.js — KundliChart.renderNorth() + renderSouth() · inline SVG with toggle button</td></tr>
+      <tr><td>House lordships, occupying planets, aspects for all 12 houses</td><td>3.2.2</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Planetary positions exposed. No formal structured house analysis object returned by API — AI covers this narratively only.</td></tr>
+      <tr><td><strong>Yoga identification (Raj Yoga, Dhana Yoga, etc.)</strong></td><td>3.2.2</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No yoga detection module in backend/kundli_engine/. No yogas.py file. PyJHora may compute some but not surfaced in API or UI.</td></tr>
+      <tr><td>Shadbala — six-fold planetary strength</td><td>3.2.2</td><td><span class="badge badge-done">✅ Done</span></td><td>backend/kundli_engine/shadbala.py — all 6 bala components · GET /kundli/{id}/shadbala</td></tr>
+      <tr><td>Ashtakavarga — eight-source benefic points</td><td>3.2.2</td><td><span class="badge badge-done">✅ Done</span></td><td>backend/kundli_engine/ashtakavarga.py — Bhinnashtakavarga + Sarvashtakavarga · transit scoring · GET /kundli/{id}/ashtakavarga</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 3.3 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>📅 FR 3.3 — Dasha System Engine</h2>
+    <span class="badge badge-partial">85% — 4 Partials</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>Vimshottari Dasha</td><td>3.3</td><td><span class="badge badge-done">✅ Done</span></td><td>Via PyJHora integration · GET /dasha/{session_id} · also in services/dasha-engine Vimshottari class</td></tr>
+      <tr><td>Yogini Dasha</td><td>3.3</td><td><span class="badge badge-done">✅ Done</span></td><td>backend/kundli_engine/dasha_systems.py — 8-lord 36-year cycle · moon nakshatra balance calculation</td></tr>
+      <tr><td>Chara Dasha (Jaimini)</td><td>3.3</td><td><span class="badge badge-done">✅ Done</span></td><td>dasha_systems.py — sign-based, lagna start</td></tr>
+      <tr><td>Kalachakra Dasha</td><td>3.3</td><td><span class="badge badge-done">✅ Done</span></td><td>dasha_systems.py — nakshatra-based, 100-year cycle</td></tr>
+      <tr><td>Narayana Dasha (Jaimini)</td><td>3.3</td><td><span class="badge badge-done">✅ Done</span></td><td>dasha_systems.py — rasi-based sign count durations</td></tr>
+      <tr><td>Moola Dasha</td><td>3.3</td><td><span class="badge badge-done">✅ Done</span></td><td>dasha_systems.py — nakshatra-based, 9 planets, 100-year cycle</td></tr>
+      <tr><td>Mahadasha / Antardasha / Pratyantardasha / Sookshma levels</td><td>3.3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Maha + Antara via PyJHora Vimshottari. Custom dasha modules (yogini, chara, etc.) return sub_periods: [] — deeper nesting not computed.</td></tr>
+      <tr><td>Interactive timeline view (navigate past/present/future)</td><td>3.3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Dasha JSON returned to frontend. No dedicated visual timeline chart component — data shown as text only.</td></tr>
+      <tr><td>Current active Dasha highlighted + AI auto-interpretation</td><td>3.3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>current_dasha field in response. /dasha/{id}/narrative endpoint exists but not auto-triggered on UI load.</td></tr>
+      <tr><td>Gochara (transit) correlation</td><td>3.3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Used in AI prompt context for yearly forecast. Not returned as a structured data field from dasha API.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 3.4 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🤖 FR 3.4 — AI Interpretation Module</h2>
+    <span class="badge badge-partial">88% — 2 Gaps, 1 Partial</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>Personal Astrology report (deep reading)</td><td>3.4.1</td><td><span class="badge badge-done">✅ Done</span></td><td>Deep reading flow screen3 · refined_analysis stored · SSE streaming · ai_reports table</td></tr>
+      <tr><td>Career &amp; Finance report</td><td>3.4.1</td><td><span class="badge badge-done">✅ Done</span></td><td>POST /report/career/{session_id} — D10/10th house analysis · SSE streaming</td></tr>
+      <tr><td>Compatibility Matchmaking report</td><td>3.4.1</td><td><span class="badge badge-done">✅ Done</span></td><td>POST /report/compatibility — dual kundli build + AI comparison · SSE streaming</td></tr>
+      <tr><td>Yearly Forecast report</td><td>3.4.1</td><td><span class="badge badge-done">✅ Done</span></td><td>POST /report/yearly-forecast/{session_id} — month-by-month Dasha + transits</td></tr>
+      <tr><td>Remedies report</td><td>3.4.1</td><td><span class="badge badge-done">✅ Done</span></td><td>POST /report/remedies/{session_id} — mantras, gemstones, lifestyle across 5 area types</td></tr>
+      <tr><td>Credit balance check before generation</td><td>3.4.2</td><td><span class="badge badge-done">✅ Done</span></td><td>Pre-deduction check · HTTP 402 if insufficient · "Buy Credits" CTA shown</td></tr>
+      <tr><td>Atomic credit deduction at confirmation</td><td>3.4.2</td><td><span class="badge badge-done">✅ Done</span></td><td>PostgreSQL transaction with rollback · deduction before AI call · confirmReportCost() dialog</td></tr>
+      <tr><td>Auto-refund credits on AI failure (≤60s)</td><td>3.4.2</td><td><span class="badge badge-done">✅ Done</span></td><td>Exception handler in chat billing refunds $0.05 · wallet_transactions updated with type=refund</td></tr>
+      <tr><td>Conversational follow-up ("Ask the Astrologer")</td><td>3.4.3</td><td><span class="badge badge-done">✅ Done</span></td><td>Chat interface screen3+ · per-message billing · session history · streaming SSE</td></tr>
+      <tr><td>AI disclaimer on all reports</td><td>3.4.3</td><td><span class="badge badge-done">✅ Done</span></td><td>Disclaimer injected in every AI prompt · UI disclaimer banner on all report screens</td></tr>
+      <tr><td><strong>Deterministic astrological validation layer</strong></td><td>3.4.3</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Architecture §5.1 requires pre-delivery AI output consistency check. LLM output is returned directly — no validation against chart data. planet_calibrator.py exists in services/ but not wired into main AI pipeline.</td></tr>
+      <tr><td>AI prompts fully anonymised (no PII in LLM calls)</td><td>Arch §9.6</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>format_for_claude_compact() strips most PII. However, profile name can appear in session context. Full PII scrubbing not enforced across all prompt paths.</td></tr>
+      <tr><td><strong>AI output persisted (ai_reports table + S3/local)</strong></td><td>Arch §6</td><td><span class="badge badge-done">✅ Done</span></td><td>_save_report() called on every SSE 'done' event · ai_reports DB table · ReportStore (S3/local)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 3.5 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>📄 FR 3.5 — Report Export &amp; Sharing</h2>
+    <span class="badge badge-partial">75% — 2 Gaps</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>PDF export</td><td>3.5</td><td><span class="badge badge-done">✅ Done</span></td><td>POST /user/email-report + GET /export/{id}/pdf — WeasyPrint/reportlab · emailed to user</td></tr>
+      <tr><td>DOCX export</td><td>3.5</td><td><span class="badge badge-done">✅ Done</span></td><td>GET /export/{id}/docx — python-docx formatted report · download as attachment</td></tr>
+      <tr><td><strong>JSON/CSV raw data export (professional users)</strong></td><td>3.5</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No endpoint to export raw chart data as structured JSON/CSV. No professional-user-gated export.</td></tr>
+      <tr><td>Shareable link (view-only, expirable, PIN-protected)</td><td>3.5</td><td><span class="badge badge-done">✅ Done</span></td><td>shared_readings table · /share/* endpoints · PIN hash · expires_at · max_views limit</td></tr>
+      <tr><td><strong>Print-optimised layout</strong></td><td>3.5</td><td><span class="badge badge-missing">❌ Missing</span></td><td>grep confirms no @media print CSS rules in frontend/index.html. Only mobile breakpoint exists.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 3.9 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>💳 FR 3.9 — Credit Purchase &amp; Wallet Management</h2>
+    <span class="badge badge-partial">78% — 2 Critical Gaps, 3 Partials</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>Credit wallet auto-created on registration</td><td>3.9.1</td><td><span class="badge badge-done">✅ Done</span></td><td>wallet_balance_cents + paid_balance_cents + promo_balance_cents columns in users table</td></tr>
+      <tr><td>Complete auditable transaction ledger</td><td>3.9.1</td><td><span class="badge badge-done">✅ Done</span></td><td>wallet_ledger table — all purchases/consumptions/refunds/promos with timestamps</td></tr>
+      <tr><td>Credits don't expire (Phase 1)</td><td>3.9.1</td><td><span class="badge badge-done">✅ Done</span></td><td>No expiry logic for paid credits</td></tr>
+      <tr><td>Geo-based pricing (INR for India, USD for USA/Canada)</td><td>3.9.2</td><td><span class="badge badge-done">✅ Done</span></td><td>region + currency columns in users · geo-based price display in UI</td></tr>
+      <tr><td><strong>GST / VAT / sales tax calculation</strong></td><td>3.9.2</td><td><span class="badge badge-missing">❌ Missing</span></td><td>SRS requires tax-inclusive prices. No tax rate calculation, display, or invoice generation in payment flow.</td></tr>
+      <tr><td>Tiered credit packs (Starter / Standard / Pro)</td><td>3.9.3</td><td><span class="badge badge-done">✅ Done</span></td><td>Mock payment UI shows tiered packs with INR/USD pricing</td></tr>
+      <tr><td>Card / UPI payment flow UI</td><td>3.9.4</td><td><span class="badge badge-done">✅ Done</span></td><td>Mock UI with UPI / Card / Net Banking tabs — realistic UI implemented</td></tr>
+      <tr><td><strong>Real PCI-DSS payment gateway (Razorpay / Stripe)</strong></td><td>3.9.4</td><td><span class="badge badge-critical">🔴 CRITICAL</span></td><td>payment/gateway.py has Razorpay + Stripe code but falls back to mock when keys absent. RAZORPAY_KEY_ID and STRIPE_SECRET_KEY not configured. Webhook handler exists but not verified end-to-end. MUST be resolved before any real transactions.</td></tr>
+      <tr><td>Wallet balance updated in UI within 5 seconds</td><td>3.9.4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>/wallet/balance endpoint exists. No WebSocket/SSE push — requires polling or explicit page action to refresh balance badge.</td></tr>
+      <tr><td>Itemised receipt emailed after purchase</td><td>3.9.4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>SMTP email system exists. No specific purchase-receipt email template with itemised breakdown.</td></tr>
+      <tr><td>Pre-report credit confirmation dialog</td><td>3.9.5</td><td><span class="badge badge-done">✅ Done</span></td><td>confirmReportCost() dialog in frontend · balance/cost/remaining shown before each generation</td></tr>
+      <tr><td>Post-report balance summary on report screen</td><td>3.9.5</td><td><span class="badge badge-done">✅ Done</span></td><td>Balance returned in chat API response · wallet badge updated after each operation</td></tr>
+      <tr><td><strong>Low-balance alerts (in-app + email when &lt;3 credits)</strong></td><td>3.9.5</td><td><span class="badge badge-missing">⚠️ Partial</span></td><td>No low-balance detection, threshold check, or notification trigger found in codebase (grep confirms zero matches).</td></tr>
+      <tr><td>Auto-refund on AI failure within 60s</td><td>3.9.6</td><td><span class="badge badge-done">✅ Done</span></td><td>Exception handling in chat billing refunds $0.05 · wallet_transactions updated</td></tr>
+      <tr><td>Promotional credits (welcome bonus, labelled Promo)</td><td>3.9.7</td><td><span class="badge badge-done">✅ Done</span></td><td>$0.20 welcome credit on email verification · promo_balance_cents column · Promo consumed first</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 3.10 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>📊 FR 3.10 — Super Admin Analytics Dashboard</h2>
+    <span class="badge badge-partial">68% — 5 Gaps</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>Admin portal secured with MFA / secret key</td><td>3.10.1</td><td><span class="badge badge-done">✅ Done</span></td><td>admin_auth() dependency — X-Admin-Secret header + brute-force lockout (5 fails / 15 min)</td></tr>
+      <tr><td>DAU / MAU metrics</td><td>3.10.2</td><td><span class="badge badge-done">✅ Done</span></td><td>get_analytics_metrics() — DAU/MAU from users.updated_at timestamps</td></tr>
+      <tr><td>Registration trend (7-day)</td><td>3.10.2</td><td><span class="badge badge-done">✅ Done</span></td><td>registration_trend_7d in analytics response</td></tr>
+      <tr><td>Reading/report generation trend</td><td>3.10.3</td><td><span class="badge badge-done">✅ Done</span></td><td>reading_trend_7d from reading_history table</td></tr>
+      <tr><td>Revenue metrics (30-day)</td><td>3.10.4</td><td><span class="badge badge-done">✅ Done</span></td><td>revenue_30d_cents from wallet_ledger · top users by balance</td></tr>
+      <tr><td>MFA adoption count</td><td>3.10.4</td><td><span class="badge badge-done">✅ Done</span></td><td>mfa_enabled_count in analytics metrics response</td></tr>
+      <tr><td>No PII in analytics interface</td><td>3.10.7</td><td><span class="badge badge-done">✅ Done</span></td><td>Analytics returns aggregated counts only. Individual records auth-gated.</td></tr>
+      <tr><td><strong>API response time / error rate / uptime</strong></td><td>3.10.6</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No Prometheus, Grafana, or built-in latency tracking. p50/p95/p99 not measured or exposed.</td></tr>
+      <tr><td><strong>Date-range filters on all metrics</strong></td><td>3.10.7</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Analytics endpoint returns fixed windows (7d/30d only). No date-range query parameters.</td></tr>
+      <tr><td><strong>CSV/Excel export from dashboard</strong></td><td>3.10.7</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No export endpoint for analytics data.</td></tr>
+      <tr><td><strong>Automated weekly summary email (Monday)</strong></td><td>3.10.7</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No scheduled task or cron job for weekly admin email digest.</td></tr>
+      <tr><td><strong>Drill-down analytics (country, feature)</strong></td><td>3.10.7</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Flat aggregated metrics only. No geographic or feature-level drill-down.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── FR 4 ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🌐 FR 4 — Multi-Language &amp; Internationalisation</h2>
+    <span class="badge badge-partial">72% — 2 Gaps, 2 Partials</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>English, Hindi, Tamil UI support</td><td>4.1</td><td><span class="badge badge-done">✅ Done</span></td><td>i18n object in index.html with full translations for all 3 languages; reactive switching</td></tr>
+      <tr><td>Language selector prominent + persists in DB</td><td>4.2</td><td><span class="badge badge-done">✅ Done</span></td><td>Selector on login screen · preferred_language stored in DB and session</td></tr>
+      <tr><td>Reactive language switch (no page reload)</td><td>4.2</td><td><span class="badge badge-done">✅ Done</span></td><td>applyLanguage() updates all labelled elements live</td></tr>
+      <tr><td>All forms, labels, validation messages translated</td><td>4.3</td><td><span class="badge badge-done">✅ Done</span></td><td>setText() applies i18n keys to all major form labels and messages</td></tr>
+      <tr><td>AI output natively in selected language</td><td>4.4</td><td><span class="badge badge-done">✅ Done</span></td><td>language param passed to all AI prompts · Claude instructed to respond in selected language</td></tr>
+      <tr><td>Locale-native date/number formats</td><td>4.3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>UI uses DD/MM/YYYY universally. No locale-specific date formatting for Tamil or Hindi locale.</td></tr>
+      <tr><td>Sanskrit shloka with translations</td><td>4.4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>AI can include shlokas via prompts. No structured enforcement or UI rendering block for shlokas.</td></tr>
+      <tr><td><strong>Devanagari/Tamil numerals where preferred</strong></td><td>4.3</td><td><span class="badge badge-missing">❌ Missing</span></td><td>All numerals rendered in Latin digits regardless of language selection.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── NFR SECURITY ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🔒 NFR 5.2 / 5.7 — Security Requirements</h2>
+    <span class="badge badge-partial">76% — 3 Gaps, 5 Partials</span>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Requirement</th><th>SRS §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+      <tr><td>JWT auth on all protected endpoints</td><td>5.7.2</td><td><span class="badge badge-done">✅ Done</span></td><td>get_current_user() / get_current_email() Depends on all auth-required routes</td></tr>
+      <tr><td>Access token 15min / Refresh token 7 days (rotated)</td><td>5.7.5</td><td><span class="badge badge-done">✅ Done</span></td><td>jwt_utils.py — ACCESS_TOKEN_EXPIRE=900s, REFRESH_TOKEN_EXPIRE=604800s · rotation on refresh</td></tr>
+      <tr><td>JWT invalidation on logout (JTI blacklist)</td><td>5.7.5</td><td><span class="badge badge-done">✅ Done</span></td><td>JTI blacklist in Redis (setex) with _mem_blacklist fallback · both tokens blacklisted on logout</td></tr>
+      <tr><td>Rate limiting on endpoints</td><td>5.7.2</td><td><span class="badge badge-done">✅ Done</span></td><td>slowapi rate limiting on register/login/resend/verify/forgot-password</td></tr>
+      <tr><td>Account lockout on repeated failures</td><td>5.7.2</td><td><span class="badge badge-done">✅ Done</span></td><td>failed_login_attempts + locked_until columns · 5 attempts → 15 min lockout</td></tr>
+      <tr><td>Secrets never hard-coded (env vars + startup validation)</td><td>5.7.2</td><td><span class="badge badge-done">✅ Done</span></td><td>JWT_SECRET, ADMIN_SECRET, FIELD_ENCRYPTION_KEY — all from env · security.py validates on startup</td></tr>
+      <tr><td>CVE dependency scanning (pip-audit) in CI</td><td>5.7.2</td><td><span class="badge badge-done">✅ Done</span></td><td>.github/workflows/ci.yml — pip-audit + bandit SAST on every push/PR</td></tr>
+      <tr><td>SQL injection prevention (parameterised queries)</td><td>5.7.1</td><td><span class="badge badge-done">✅ Done</span></td><td>All DB operations use psycopg2 %s params — no raw string concatenation found</td></tr>
+      <tr><td>CORS configured</td><td>5.7.2</td><td><span class="badge badge-done">✅ Done</span></td><td>CORSMiddleware in main.py · allow_origins configurable via env</td></tr>
+      <tr><td>PII encrypted at rest</td><td>5.2</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Fernet (AES-128-CBC) via field_encryption.py. SRS requires AES-256. Upgrade to AES-256-GCM (cryptography.hazmat) required for production.</td></tr>
+      <tr><td>Encryption keys in KMS</td><td>5.7.1</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>FIELD_ENCRYPTION_KEY in .env file. No AWS KMS or HashiCorp Vault integration. Acceptable for dev; must use KMS before production launch.</td></tr>
+      <tr><td>TLS 1.3 enforcement</td><td>5.2</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Documented in DEPLOYMENT.md (Nginx ssl_protocols TLSv1.3). Not enforced at app layer — depends on deployment config.</td></tr>
+      <tr><td>User self-service data export + account deletion (GDPR)</td><td>5.2</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>DELETE /user/{email} exists (admin-only). No user-facing self-service delete or data export endpoint.</td></tr>
+      <tr><td>Database activity monitoring / audit log</td><td>5.7.1</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>_audit_log() function exists in main.py for admin actions. No PostgreSQL-level activity monitoring or application-wide DB audit trail.</td></tr>
+      <tr><td><strong>WAF in front of all public services</strong></td><td>5.7.3</td><td><span class="badge badge-missing">❌ Missing</span></td><td>AWS WAF/Cloudflare documented in DEPLOYMENT.md as pre-launch requirement but not configured.</td></tr>
+      <tr><td><strong>Penetration test report</strong></td><td>5.7.3</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No third-party pen test conducted or scheduled.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── ARCHITECTURE SPEC ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🏗 Architecture Specification Compliance</h2>
+    <span class="badge badge-partial">42% Overall</span>
+  </div>
+  <div class="callout purple">
+    <strong>Key Finding:</strong> The architecture specification describes a full microservices deployment (9 independent services on Kubernetes/EKS). The current implementation is a <strong>monolith</strong>. The <code>services/</code> folder exists but contains only partial skeletons — they are <em>not runnable, independently deployable services</em>. This is documented in DEPLOYMENT.md as an intentional pragmatic Phase-1 decision.
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Architecture Requirement</th><th>Arch §</th><th>Status</th><th>Evidence / Gap Detail</th></tr>
+
+      <!-- CORE MODULES as monolith -->
+      <tr><td>auth-service logic (JWT, MFA, OAuth)</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>backend/auth/* — complete: jwt_utils, mfa, oauth_google, field_encryption, email_service</td></tr>
+      <tr><td>kundli-engine logic</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>backend/kundli_engine/* — engine (PyJHora adapter), formatter, dasha_systems, shadbala, ashtakavarga</td></tr>
+      <tr><td>dasha-engine logic (all 6 systems)</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>dasha_systems.py — all 5 additional systems + Vimshottari via PyJHora</td></tr>
+      <tr><td>ai-interpretation-service logic</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>backend/ai_interpretation/agent.py — Claude API, all 5 report types, streaming SSE</td></tr>
+      <tr><td>credit-wallet-service logic</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>Wallet endpoints + atomic PostgreSQL transactions + wallet_ledger table + auto-refund</td></tr>
+      <tr><td>payment-gateway-service logic</td><td>§3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>payment/gateway.py — Razorpay + Stripe adapters written but fall back to mock (no live keys). HMAC webhook verification partially implemented.</td></tr>
+      <tr><td>notification-service (email)</td><td>§3</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>SMTP for verification + password reset. Missing: purchase receipt, low-balance alert, weekly admin digest.</td></tr>
+      <tr><td>report-export-service logic</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>PDF + DOCX export endpoints · ai_reports table · ReportStore (S3/local backend)</td></tr>
+      <tr><td>analytics-service logic</td><td>§3</td><td><span class="badge badge-done">✅ Done (monolith)</span></td><td>/admin/analytics with real DAU/MAU/revenue metrics from PostgreSQL</td></tr>
+
+      <!-- SERVICES MICROSERVICE FOLDER STRUCTURE -->
+      <tr><td><strong>services/kundli-engine — full module structure</strong></td><td>§4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Only engine.py + formatter.py exist. Missing: ephemeris.py, ayanamsa.py, houses.py, divisional.py, shadbala.py, yogas.py, api/ folder, tests/.</td></tr>
+      <tr><td><strong>services/dasha-engine — all 6 dasha systems</strong></td><td>§4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Only vimshottari.py implemented. yogini, chara, kalachakra, narayana, moola are commented-out TODOs in __init__.py. timeline/ and transit/ folders exist but are empty.</td></tr>
+      <tr><td><strong>services/payment-gateway-service — full structure</strong></td><td>§4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Only src/adapters/gateway.py exists. Missing: upi/, webhooks/, geo-pricing/ sub-modules per spec.</td></tr>
+      <tr><td><strong>services/notification-service — src/ code</strong></td><td>§4</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Folder has only Dockerfile + README + requirements.txt. Zero source code implemented.</td></tr>
+      <tr><td><strong>services/analytics-service — src/ code</strong></td><td>§4</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Folder has only Dockerfile + README + requirements.txt. Zero source code implemented.</td></tr>
+      <tr><td><strong>services/auth-service — src/ code</strong></td><td>§4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>Only src/utils/email_service.py. Missing: controllers/, middleware/, models/ per spec.</td></tr>
+
+      <!-- DATA LAYER -->
+      <tr><td>PostgreSQL 16 primary database</td><td>§6</td><td><span class="badge badge-done">✅ Done</span></td><td>Full schema: users, kundli_profiles, wallet_ledger, reading_history, shared_readings, ai_reports · 4 migration SQL files</td></tr>
+      <tr><td>Redis (sessions + JWT blacklist)</td><td>§6</td><td><span class="badge badge-done">✅ Done</span></td><td>_SessionsProxy with Redis backend + in-memory fallback · JTI blacklist via Redis setex</td></tr>
+      <tr><td>S3-compatible object storage for reports</td><td>§6</td><td><span class="badge badge-done">✅ Done</span></td><td>backend/storage/report_store.py — boto3 S3 + local filesystem fallback with auto-detection</td></tr>
+      <tr><td><strong>SQS / RabbitMQ event bus (async service communication)</strong></td><td>§5.2</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Monolith — all operations synchronous. No message queue implemented or configured.</td></tr>
+      <tr><td><strong>OpenSearch for analytics</strong></td><td>§6</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Analytics stored in PostgreSQL only. No OpenSearch/Elasticsearch integration.</td></tr>
+
+      <!-- INFRASTRUCTURE -->
+      <tr><td><strong>API Gateway layer (Kong / AWS API GW)</strong></td><td>§2</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Single FastAPI app serves all routes. No separate API gateway layer.</td></tr>
+      <tr><td><strong>Kubernetes / EKS deployment manifests</strong></td><td>§11</td><td><span class="badge badge-missing">❌ Missing</span></td><td>infrastructure/ has db migrations and docker-compose only. No k8s/ manifests, Helm charts, or HPA configs.</td></tr>
+      <tr><td><strong>Service mesh / mTLS intra-service</strong></td><td>§11</td><td><span class="badge badge-missing">❌ Missing</span></td><td>N/A in monolith. No Istio/App Mesh config.</td></tr>
+      <tr><td><strong>AWS KMS for encryption key management</strong></td><td>§9.1</td><td><span class="badge badge-missing">❌ Missing</span></td><td>FIELD_ENCRYPTION_KEY from env var only. No KMS integration.</td></tr>
+      <tr><td><strong>CloudFront CDN + AWS WAF</strong></td><td>§11.3</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Documented in DEPLOYMENT.md as pre-launch requirement. Not deployed or configured.</td></tr>
+      <tr><td><strong>Prometheus metrics + Grafana dashboards</strong></td><td>§11.5</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No /metrics endpoint, no Prometheus scraping config, no Grafana.</td></tr>
+      <tr><td><strong>Structured JSON logging + CloudWatch</strong></td><td>§11.5</td><td><span class="badge badge-missing">❌ Missing</span></td><td>Basic Python logging module. No JSON format, no CloudWatch/Datadog integration.</td></tr>
+      <tr><td><strong>Terraform IaC</strong></td><td>§11.6</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No Terraform configs in repository. infrastructure/ has only DB SQL files and docker-compose.</td></tr>
+      <tr><td><strong>Blue/green deployment strategy</strong></td><td>§11.4</td><td><span class="badge badge-missing">❌ Missing</span></td><td>No blue/green pipeline. Single deployment via Docker/systemd documented only.</td></tr>
+      <tr><td>GitHub Actions CI/CD (4 stages)</td><td>§11.2</td><td><span class="badge badge-done">✅ Done</span></td><td>.github/workflows/ci.yml — lint (flake8) + test (pytest + postgres/redis services) + security (pip-audit + bandit) + docker build</td></tr>
+      <tr><td>Dockerfile with health check</td><td>§11.1</td><td><span class="badge badge-done">✅ Done</span></td><td>Dockerfile with HEALTHCHECK on /health · non-root user · gunicorn workers</td></tr>
+      <tr><td>DEPLOYMENT.md strategy document</td><td>§11</td><td><span class="badge badge-done">✅ Done</span></td><td>391-line guide covering local dev, Docker, AWS, VPS, DB migrations, CI/CD, security checklist</td></tr>
+
+      <!-- FRONTEND / MONOREPO -->
+      <tr><td><strong>React SPA (Vite + SSR) — full component structure</strong></td><td>§4</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>apps/web/index.html is a vanilla HTML/JS SPA. No React, Vite, or SSR. No components/, features/, i18n/, hooks/, store/ folders per spec.</td></tr>
+      <tr><td><strong>React Native mobile app (iOS + Android)</strong></td><td>§4</td><td><span class="badge badge-missing">❌ Missing</span></td><td>apps/mobile/ folder does not exist. No React Native code anywhere in repository.</td></tr>
+      <tr><td><strong>packages/ shared libraries (shared-types, design-system, astro-core-lib)</strong></td><td>§4</td><td><span class="badge badge-missing">❌ Missing</span></td><td>packages/ folder does not exist. No TypeScript interfaces, shared component library, or standalone astro-core-lib.</td></tr>
+      <tr><td><strong>turbo.json monorepo pipeline config</strong></td><td>§4</td><td><span class="badge badge-missing">❌ Missing</span></td><td>turbo.json does not exist. Monorepo toolchain (Turborepo) not set up.</td></tr>
+      <tr><td><strong>WebSocket/SSE real-time wallet balance push</strong></td><td>§5.2</td><td><span class="badge badge-partial">⚠️ Partial</span></td><td>SSE used for report streaming. Wallet balance not pushed in real-time; requires polling or page action.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ─────────────────── PRIORITY MATRIX ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>🎯 Gap Priority Matrix — What to Fix &amp; When</h2>
+  </div>
+  <div class="priority-grid">
+    <div class="priority-col red">
+      <h3 class="red">🔴 Must-Fix Before Production</h3>
+      <ul>
+        <li>Real payment gateway (Razorpay/Stripe keys + webhook verification)</li>
+        <li>Deterministic AI output validation layer (planet_calibrator.py wired in)</li>
+        <li>PII encryption upgrade: Fernet AES-128 → AES-256-GCM</li>
+        <li>WAF deployment (AWS WAF or Cloudflare)</li>
+        <li>KMS for encryption key management (not .env)</li>
+        <li>GST/VAT tax calculation in payment flow</li>
+        <li>Full AI prompt PII anonymisation (strip name/DOB)</li>
+        <li>User self-service data export + account deletion (GDPR)</li>
+        <li>Gender field in kundli_profiles schema + UI</li>
+      </ul>
+    </div>
+    <div class="priority-col amber">
+      <h3 class="amber">🟡 High Priority (Sprint 2)</h3>
+      <ul>
+        <li>Real-time wallet balance push (SSE/WebSocket)</li>
+        <li>Low-balance alerts (in-app + email when &lt;3 credits)</li>
+        <li>Purchase receipt email template</li>
+        <li>Admin analytics: date-range filters + CSV export</li>
+        <li>Automated weekly admin summary email</li>
+        <li>Sub-period levels (Antardasha, Pratyantardasha) in custom dasha systems</li>
+        <li>Yoga identification module (backend/kundli_engine/yogas.py)</li>
+        <li>Interactive dasha timeline visual in frontend</li>
+        <li>JSON/CSV raw chart data export (professional users)</li>
+        <li>Configurable Ayanamsa (user-selectable Raman/KP)</li>
+        <li>Prometheus /metrics endpoint + structured JSON logging</li>
+        <li>Print-optimised @media print CSS</li>
+        <li>Purchase receipt email template</li>
+      </ul>
+    </div>
+    <div class="priority-col green">
+      <h3 class="green">🟢 Medium/Long-Term (Sprint 3+)</h3>
+      <ul>
+        <li>Apple OAuth (Sign in with Apple)</li>
+        <li>Professional astrologer dashboard + client list</li>
+        <li>Kubernetes manifests + Helm charts</li>
+        <li>Terraform IaC for cloud infrastructure</li>
+        <li>SQS/RabbitMQ event bus for async service communication</li>
+        <li>Extract services/ into actual independent deployable microservices</li>
+        <li>React SPA migration (Vite + component architecture)</li>
+        <li>React Native mobile app (iOS + Android)</li>
+        <li>OpenSearch for analytics storage</li>
+        <li>PWA manifest + service worker (offline mode)</li>
+        <li>Locale-native date formats + Devanagari/Tamil numerals</li>
+        <li>WCAG 2.1 AA compliance (ARIA attributes)</li>
+        <li>Third-party penetration test</li>
+        <li>Blue/green deployment pipeline</li>
+        <li>D2/D3/D7/D8/D16 divisional chart verification</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────── STRENGTHS ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>✅ Strengths — What Has Been Built Well</h2>
+  </div>
+  <div class="arch-block">
+    <div class="callout green">
+      <strong>Production-Grade Foundation:</strong> The codebase has advanced from a prototype to a well-structured monolith with 73% SRS compliance. The core astrological engine, authentication stack, credit wallet, and AI integration are all solid and functionally complete.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Authentication Stack</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">Complete — JWT rotate + blacklist, TOTP MFA, Google OAuth, bcrypt, rate limiting, account lockout, startup secret validation</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Dasha Engine</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">All 6 systems implemented (Vimshottari + 5 Jaimini) with balance calculations and period sequences in backend/kundli_engine/dasha_systems.py</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Credit Wallet</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">Atomic PostgreSQL transactions, paid/promo balance split, full wallet_ledger, auto-refund on AI failure, pre/post confirmation dialogs</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Shadbala + Ashtakavarga</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">Both classical planetary strength systems implemented with full API endpoints and transit scoring</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">CI/CD Pipeline</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">4-stage GitHub Actions: flake8 lint + pytest (with postgres/redis services) + pip-audit CVE scan + bandit SAST + Docker build</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Report Infrastructure</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">ai_reports table + S3/local ReportStore with auto-detection + PDF + DOCX export + PIN-protected shareable links</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Kundli Charts</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">North Indian (diamond) + South Indian (4×4 grid) as inline SVG with planet colour coding and style toggle</span></div>
+      </div>
+      <div>
+        <h3 style="font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem">Admin Analytics</h3>
+        <div class="gap-item"><span class="gap-icon">✅</span><span class="gap-text">Real metrics from PostgreSQL: DAU/MAU, revenue_30d, registration/reading 7-day trends, MFA adoption, top users</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────── ARCHITECTURE DEVIATION NOTE ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>⚠️ Architecture Deviation: Monolith vs Microservices</h2>
+  </div>
+  <div class="arch-block">
+    <div class="callout amber">
+      <strong>Important Context:</strong> The services/ folder was created to scaffold the microservice architecture per spec, but each service is currently a skeleton (Dockerfile + README + partial src). The <em>actual running code</em> lives in the <strong>backend/</strong> monolith. The two codebases are currently separate and not in sync.
+    </div>
+    <h3>What services/ contains vs what the architecture requires:</h3>
+    <div class="gap-item"><span class="gap-icon">⚠️</span><span class="gap-text"><strong>services/dasha-engine:</strong> Has api/main.py with full FastAPI routes and Vimshottari implementation. But yogini, chara, kalachakra, narayana, moola are commented-out TODOs. timeline/ and transit/ directories are empty. Not deployed independently.</span></div>
+    <div class="gap-item"><span class="gap-icon">⚠️</span><span class="gap-text"><strong>services/kundli-engine:</strong> Has engine.py (delegates to PyJHora) + formatter.py only. Missing ephemeris.py, ayanamsa.py, houses.py, divisional.py, shadbala.py, yogas.py, api/ and tests/ per spec.</span></div>
+    <div class="gap-item"><span class="gap-icon">⚠️</span><span class="gap-text"><strong>services/ai-interpretation-service:</strong> Has agent.py, prompts.py, planet_calibrator.py, safety_filter.py. The <code>report_types/</code> and <code>api/</code> directories exist but may be empty — needs verification. Most complete service skeleton.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>services/notification-service:</strong> No source code. Dockerfile + README + requirements.txt only.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>services/analytics-service:</strong> No source code. Dockerfile + README + requirements.txt only.</span></div>
+    <div class="gap-item"><span class="gap-icon">⚠️</span><span class="gap-text"><strong>services/payment-gateway-service:</strong> Has src/adapters/gateway.py. Missing upi/, webhooks/, geo-pricing/ sub-modules.</span></div>
+    <div class="gap-item"><span class="gap-icon">⚠️</span><span class="gap-text"><strong>services/auth-service:</strong> Has src/utils/email_service.py. Missing controllers/, middleware/, models/ per spec.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>packages/ folder:</strong> Does not exist. shared-types, design-system, astro-core-lib not implemented.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>infrastructure/k8s/, infrastructure/helm/, infrastructure/terraform/:</strong> None of these exist. Only infrastructure/db/ (SQL migrations) and infrastructure/docker/ (docker-compose.yml) are present.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>apps/web/:</strong> Only index.html (vanilla HTML/JS). No React SPA structure with components/, features/, i18n/, hooks/, store/.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>apps/mobile/:</strong> Folder does not exist. No React Native code.</span></div>
+    <div class="gap-item"><span class="gap-icon">❌</span><span class="gap-text"><strong>turbo.json:</strong> Does not exist. Monorepo toolchain not configured.</span></div>
+  </div>
+</div>
+
+<!-- ─────────────────── SUMMARY TABLE ─────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <h2>📋 Executive Summary</h2>
+  </div>
+  <div class="section-body">
+    <table>
+      <tr><th>Area</th><th>Compliance</th><th>Key Achieved</th><th>Key Remaining</th></tr>
+      <tr><td>Authentication</td><td><span class="badge badge-done">~95%</span></td><td>JWT, MFA, OAuth Google, lockout, rate limiting, blacklist</td><td>Apple OAuth only</td></tr>
+      <tr><td>Kundli Engine</td><td><span class="badge badge-partial">70%</span></td><td>Planetary data, SVG charts (N+S Indian), Shadbala, Ashtakavarga</td><td>Yoga detection, configurable Ayanamsa, formal house analysis</td></tr>
+      <tr><td>Dasha Engine</td><td><span class="badge badge-partial">85%</span></td><td>All 6 dasha systems, PyJHora Vimshottari, current dasha, narrative endpoint</td><td>Deep sub-periods, visual timeline, Gochara as structured field</td></tr>
+      <tr><td>AI Interpretation</td><td><span class="badge badge-partial">88%</span></td><td>5 report types, streaming SSE, credit gating, disclaimer, report persistence</td><td>Deterministic validation layer, full PII anonymisation</td></tr>
+      <tr><td>Payments &amp; Wallet</td><td><span class="badge badge-partial">78%</span></td><td>Atomic ledger, promo/paid split, geo-pricing, UI confirmation dialogs</td><td>Real gateway activation, tax, real-time balance push, low-balance alert, receipt email</td></tr>
+      <tr><td>Reports &amp; Exports</td><td><span class="badge badge-partial">75%</span></td><td>PDF, DOCX, shareable links, S3/local storage</td><td>JSON/CSV export, print CSS</td></tr>
+      <tr><td>Admin Analytics</td><td><span class="badge badge-partial">68%</span></td><td>DAU/MAU, revenue, registration trends, MFA metrics</td><td>Date filters, CSV export, latency metrics, weekly email, drill-down</td></tr>
+      <tr><td>i18n / Languages</td><td><span class="badge badge-partial">72%</span></td><td>3 languages, reactive switch, AI language-native output</td><td>Locale date formats, Devanagari/Tamil numerals</td></tr>
+      <tr><td>Security (NFR)</td><td><span class="badge badge-partial">76%</span></td><td>JWT rotation, rate limiting, CVE scanning, CORS, parameterised SQL</td><td>AES-256 upgrade, KMS, WAF, GDPR self-service delete, pen test</td></tr>
+      <tr><td>Microservices (Arch Spec)</td><td><span class="badge badge-missing">~15%</span></td><td>Folder scaffolding with Dockerfiles + READMEs; dasha-engine has partial FastAPI impl</td><td>Independent deployable services, K8s, Helm, Terraform, message queue, API Gateway, service mesh</td></tr>
+      <tr><td>Frontend (React SPA)</td><td><span class="badge badge-missing">~10%</span></td><td>Functional vanilla HTML/JS SPA with full feature coverage</td><td>React migration, Vite, component architecture, React Native mobile app</td></tr>
+      <tr><td>Infrastructure / IaC</td><td><span class="badge badge-missing">~20%</span></td><td>Dockerfile, docker-compose, DB migrations, CI/CD pipeline</td><td>K8s manifests, Helm, Terraform, Prometheus, structured logging, CDN, blue/green</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  NarayanAstroReader — Phase-1 + Architecture Compliance Audit Report v5 &nbsp;|&nbsp;
+  Generated 7 May 2026 &nbsp;|&nbsp;
+  <strong>SRS: 73%</strong> &nbsp;|&nbsp;
+  <strong>Arch Spec: 42%</strong>
+</div>
+
+</div>
+</body>
+</html>

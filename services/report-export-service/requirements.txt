@@ -1,0 +1,9 @@
+# report-export-service dependencies
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+fpdf2>=2.7.9        # PDF generation
+# Phase 1-C:
+# python-docx>=1.1.0  # DOCX generation
+# boto3>=1.34.0       # AWS S3 storage
+httpx>=0.27.0

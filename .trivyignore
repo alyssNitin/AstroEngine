@@ -1,0 +1,13 @@
+# .trivyignore — Trivy CVE suppression list
+# ─────────────────────────────────────────────────────────────────────────────
+# Add CVE IDs here to suppress false positives that have been reviewed and
+# accepted by the security team.
+#
+# Format: one CVE-ID per line, optionally with a comment.
+# Suppression requires documented review in SECURITY_DECISIONS.md.
+#
+# Example:
+# CVE-2023-XXXXX  # Reviewed YYYY-MM-DD: not exploitable in our config
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# (No suppressions currently — all CVEs must be resolved.)

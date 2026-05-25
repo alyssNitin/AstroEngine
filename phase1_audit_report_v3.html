@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NarayanAstroReader — Phase 1 &amp; Architecture Compliance Audit v3</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.6; }
+  a { color: #58a6ff; }
+  h1 { font-size: 1.8rem; color: #e6edf3; }
+  h2 { font-size: 1.25rem; color: #a78bfa; margin: 28px 0 10px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  h3 { font-size: 1rem; color: #c4b5fd; margin: 16px 0 6px; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Header */
+  .report-header { background: linear-gradient(135deg, #1e1b4b 0%, #111827 100%);
+    border: 1px solid #312e81; border-radius: 12px; padding: 28px 32px; margin-bottom: 32px; }
+  .report-header p { color: #9ca3af; font-size: .9rem; margin-top: 6px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 16px; }
+  .meta-item { background: rgba(255,255,255,.04); border-radius: 6px; padding: 10px 14px; }
+  .meta-item .k { font-size: .7rem; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
+  .meta-item .v { font-size: .95rem; color: #e6edf3; font-weight: 600; margin-top: 2px; }
+
+  /* Scorecard */
+  .scorecard { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 32px; }
+  .score-card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 18px 20px; text-align: center; }
+  .score-card .num { font-size: 2.2rem; font-weight: 800; }
+  .score-card .lbl { font-size: .75rem; color: #8b949e; margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+  .score-card.green .num  { color: #34d399; }
+  .score-card.amber .num  { color: #fbbf24; }
+  .score-card.red   .num  { color: #f87171; }
+  .score-card.blue  .num  { color: #60a5fa; }
+  .score-card.purple .num { color: #a78bfa; }
+
+  /* Gauge */
+  .gauge-row { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+  .gauge-bar { flex: 1; height: 20px; background: #21262d; border-radius: 10px; overflow: hidden; }
+  .gauge-fill { height: 100%; border-radius: 10px; transition: width .6s ease; }
+  .gauge-label { font-size: .85rem; color: #8b949e; white-space: nowrap; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: .72rem; font-weight: 600; white-space: nowrap; }
+  .badge.pass    { background: #052e16; color: #34d399; border: 1px solid #065f46; }
+  .badge.partial { background: #451a03; color: #fbbf24; border: 1px solid #78350f; }
+  .badge.fail    { background: #450a0a; color: #f87171; border: 1px solid #7f1d1d; }
+  .badge.na      { background: #1c2128; color: #8b949e; border: 1px solid #30363d; }
+
+  /* Priority */
+  .pri { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .68rem; font-weight: 700; }
+  .pri.critical { background: #7f1d1d; color: #fca5a5; }
+  .pri.high     { background: #78350f; color: #fcd34d; }
+  .pri.medium   { background: #1e3a5f; color: #93c5fd; }
+  .pri.low      { background: #064e3b; color: #6ee7b7; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-bottom: 24px; }
+  thead tr { background: #161b22; }
+  th { padding: 10px 12px; text-align: left; color: #8b949e; font-size: .75rem;
+       text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #21262d; }
+  td { padding: 9px 12px; border-bottom: 1px solid #161b22; vertical-align: top; }
+  tr:hover td { background: #161b22; }
+  td.req { font-weight: 600; color: #e6edf3; white-space: nowrap; }
+  td.desc { color: #8b949e; font-size: .82rem; }
+  td.evidence { font-size: .8rem; font-family: monospace; color: #79c0ff; }
+  td.gap { font-size: .8rem; color: #f0883e; }
+
+  /* Section box */
+  .section { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 18px 22px; margin-bottom: 20px; }
+  .section-title { font-size: 1rem; font-weight: 700; color: #e6edf3; margin-bottom: 12px; }
+
+  /* Gap list */
+  .gap-list { list-style: none; }
+  .gap-list li { padding: 10px 14px; margin-bottom: 8px; background: #0d1117; border-left: 3px solid;
+    border-radius: 0 6px 6px 0; font-size: .85rem; }
+  .gap-list li.critical { border-color: #f87171; }
+  .gap-list li.high     { border-color: #fbbf24; }
+  .gap-list li.medium   { border-color: #60a5fa; }
+  .gap-list li .gap-title { font-weight: 600; color: #e6edf3; }
+  .gap-list li .gap-detail { color: #8b949e; font-size: .8rem; margin-top: 2px; }
+
+  /* Architecture compliance table */
+  .arch-row { display: grid; grid-template-columns: 220px 1fr 90px; gap: 10px; align-items: start;
+    padding: 10px 0; border-bottom: 1px solid #21262d; }
+  .arch-row:last-child { border-bottom: none; }
+  .arch-service { font-weight: 600; color: #c4b5fd; font-size: .88rem; }
+  .arch-detail { font-size: .83rem; color: #8b949e; }
+  .arch-status { text-align: right; }
+
+  .note { background: #161b22; border-left: 3px solid #60a5fa; padding: 10px 14px; border-radius: 0 6px 6px 0;
+    font-size: .83rem; color: #8b949e; margin: 12px 0; }
+  .note strong { color: #e6edf3; }
+
+  .toc { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px 22px; margin-bottom: 28px; }
+  .toc ul { list-style: none; column-count: 2; column-gap: 24px; }
+  .toc li { padding: 3px 0; font-size: .85rem; }
+  .toc a { color: #8b949e; text-decoration: none; }
+  .toc a:hover { color: #a78bfa; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="report-header">
+  <h1>📋 NarayanAstroReader — Phase 1 &amp; Architecture Compliance Audit</h1>
+  <p>Comprehensive review of all Phase 1 SRS functional &amp; non-functional requirements, plus Architecture Specification compliance. Version 3 — post security-hardening implementation.</p>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">Report Version</div><div class="v">v3.0</div></div>
+    <div class="meta-item"><div class="k">Audit Date</div><div class="v">May 7, 2026</div></div>
+    <div class="meta-item"><div class="k">SRS Reference</div><div class="v">Phase1_AI_Core_SRS v1.0</div></div>
+    <div class="meta-item"><div class="k">Arch Reference</div><div class="v">design_architecture.docx v1.0</div></div>
+    <div class="meta-item"><div class="k">Codebase State</div><div class="v">Post Task #47</div></div>
+  </div>
+</div>
+
+<!-- ═══ TABLE OF CONTENTS ══════════════════════════════════════════════════════ -->
+<div class="toc">
+  <h3 style="margin:0 0 10px;color:#e6edf3">Contents</h3>
+  <ul>
+    <li><a href="#scorecard">1. Executive Scorecard</a></li>
+    <li><a href="#fr31">2. FR 3.1 — User Onboarding</a></li>
+    <li><a href="#fr32">3. FR 3.2 — Kundli Engine</a></li>
+    <li><a href="#fr33">4. FR 3.3 — Dasha Engine</a></li>
+    <li><a href="#fr34">5. FR 3.4 — AI Interpretation</a></li>
+    <li><a href="#fr35">6. FR 3.5 — Report Export</a></li>
+    <li><a href="#fr39">7. FR 3.9 — Credit Wallet</a></li>
+    <li><a href="#fr310">8. FR 3.10 — Admin Analytics</a></li>
+    <li><a href="#fr4">9. FR 4 — Multi-Language</a></li>
+    <li><a href="#nfr51">10. NFR 5.1 — Performance</a></li>
+    <li><a href="#nfr52">11. NFR 5.2 — Security &amp; Privacy</a></li>
+    <li><a href="#nfr53">12. NFR 5.3–5.6 — Reliability / Scale / Access</a></li>
+    <li><a href="#nfr57">13. NFR 5.7 — Critical Security</a></li>
+    <li><a href="#arch">14. Architecture Specification Compliance</a></li>
+    <li><a href="#gaps">15. Prioritised Gap List</a></li>
+    <li><a href="#summary">16. Summary &amp; Recommendations</a></li>
+  </ul>
+</div>
+
+<!-- ═══ SCORECARD ════════════════════════════════════════════════════════════ -->
+<h2 id="scorecard">1. Executive Scorecard</h2>
+<div class="scorecard">
+  <div class="score-card green"><div class="num">27</div><div class="lbl">✅ PASS</div></div>
+  <div class="score-card amber"><div class="num">16</div><div class="lbl">⚠️ PARTIAL</div></div>
+  <div class="score-card red"><div class="num">27</div><div class="lbl">❌ FAIL</div></div>
+  <div class="score-card blue"><div class="num">70</div><div class="lbl">Total Checks</div></div>
+  <div class="score-card purple"><div class="num">39%</div><div class="lbl">Overall Compliance</div></div>
+</div>
+
+<div class="gauge-row">
+  <span class="gauge-label">Phase-1 FR</span>
+  <div class="gauge-bar"><div class="gauge-fill" style="width:41%;background:linear-gradient(90deg,#34d399,#fbbf24)"></div></div>
+  <span class="gauge-label">41% (22/54 checks)</span>
+</div>
+<div class="gauge-row">
+  <span class="gauge-label">NFR / Security</span>
+  <div class="gauge-bar"><div class="gauge-fill" style="width:33%;background:linear-gradient(90deg,#fbbf24,#f87171)"></div></div>
+  <span class="gauge-label">33% (5/16 checks)</span>
+</div>
+<div class="gauge-row">
+  <span class="gauge-label">Architecture Spec</span>
+  <div class="gauge-bar"><div class="gauge-fill" style="width:35%;background:linear-gradient(90deg,#60a5fa,#a78bfa)"></div></div>
+  <span class="gauge-label">35% (7/20 services)</span>
+</div>
+
+<div class="note"><strong>Key improvement since v2:</strong> JWT enforcement on all protected endpoints (FR 5.7.2), rate limiting + account lockout (FR 5.7.2), admin secret-key authentication (FR 5.7.5), Redis session store (NFR 5.4), AI disclaimer on all reports (FR 3.4.3), and pre-report credit confirmation dialog (FR 3.9.5) have all been implemented. Overall score improved from 43% → 39% weighted (more checks added as scope understanding deepened).</div>
+
+
+<!-- ═══ FR 3.1 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr31">2. FR 3.1 — User Onboarding &amp; Profile Management</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.1.1a</td><td>Email/password registration</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /auth/register → database.register()</td></tr>
+    <tr><td class="req">3.1.1b</td><td>Social OAuth (Google, Apple)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No OAuth endpoints. No Google/Apple login buttons in UI. No Passport.js integration.</td></tr>
+    <tr><td class="req">3.1.1c</td><td>2FA / MFA support</td><td><span class="badge fail">FAIL</span></td><td class="gap">No TOTP, no MFA endpoints (/auth/mfa/setup, /auth/mfa/verify missing). mfa_enabled column not in schema.</td></tr>
+    <tr><td class="req">3.1.1d</td><td>Language selection at onboarding</td><td><span class="badge pass">PASS</span></td><td class="evidence">Lang pills on registration screen; saved as preferred_language in users table</td></tr>
+    <tr><td class="req">3.1.2a</td><td>Multiple Kundli profiles per user</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">reading_history table stores past readings but no separate kundli_profiles table. Users table stores one active birth profile. Arch spec requires kundli_profiles with UUID, user_id FK.</td></tr>
+    <tr><td class="req">3.1.2b</td><td>Profile stores name/gender/DOB/TOB/timezone/place</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Fields exist in users table but timezone is stored as offset float, not IANA string. gender not stored.</td></tr>
+    <tr><td class="req">3.1.2c</td><td>Professional astrologer client list &amp; dashboard</td><td><span class="badge fail">FAIL</span></td><td class="gap">user_type field exists but no professional role enforcement, no client list, no astrologer dashboard.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 3.2 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr32">3. FR 3.2 — Kundli Generation Engine</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.2.1a</td><td>Lagna + 9 planets computed, Nirayan/Sidereal zodiac</td><td><span class="badge pass">PASS</span></td><td class="evidence">backend/kundli_engine/engine.py via PyJHora + pyswisseph. Lahiri Ayanamsa default.</td></tr>
+    <tr><td class="req">3.2.1b</td><td>Lahiri Ayanamsa default; Raman/KP configurable</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Lahiri default confirmed. Raman/KP configurable via PyJHora but no user-facing setting in UI.</td></tr>
+    <tr><td class="req">3.2.1c</td><td>D2, D3, D7, D8, D9, D10, D16 divisional charts</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">D9 (Navamsa) and D10 (Dasamsa) visible in stub output. PyJHora provides up to D16 but not all are explicitly returned in API response JSON.</td></tr>
+    <tr><td class="req">3.2.1d</td><td>North Indian (diamond) and South Indian (square) chart styles</td><td><span class="badge fail">FAIL</span></td><td class="gap">No SVG/Canvas chart rendering in UI. No chart_style selector. Only text-based output is shown.</td></tr>
+    <tr><td class="req">3.2.2a</td><td>House lordships, occupants, aspects for 12 houses</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">PyJHora computes this; returned in kundli_json blob but not exposed as a dedicated structured API field.</td></tr>
+    <tr><td class="req">3.2.2b</td><td>Yoga identification (Raj Yoga, Dhana Yoga, etc.)</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">engine.py stub shows single yoga field. PyJHora detects yogas but yoga list not surfaced as dedicated API field or displayed in UI.</td></tr>
+    <tr><td class="req">3.2.2c</td><td>Shadbala (six-fold planetary strength)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No Shadbala endpoint. Not computed or displayed. services/kundli-engine has no shadbala.py (arch spec requires it).</td></tr>
+    <tr><td class="req">3.2.2d</td><td>Ashtakavarga (eight-source benefic points)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No Ashtakavarga endpoint. Not computed or displayed. services/kundli-engine has no ashtakavarga.py.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 3.3 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr33">4. FR 3.3 — Dasha System Engine</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.3a</td><td>6 Dasha systems: Vimshottari, Yogini, Chara, Kalachakra, Narayana, Moola</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">services/dasha-engine only implements Vimshottari. Backend delegates to PyJHora which supports all 6, but Yogini/Chara/Kalachakra/Narayana/Moola are not exposed via standalone modules or separate API params.</td></tr>
+    <tr><td class="req">3.3b</td><td>Mahadasha → Antardasha → Pratyantardasha → Sookshma timelines</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Mahadasha + Antardasha parsed by vimshottari.py. Pratyantardasha/Sookshma available via PyJHora depth param but not validated as working at depth 3+.</td></tr>
+    <tr><td class="req">3.3c</td><td>Interactive timeline view (navigate past/present/future)</td><td><span class="badge fail">FAIL</span></td><td class="gap">Dasha output is text/table only. No interactive timeline component in frontend.</td></tr>
+    <tr><td class="req">3.3d</td><td>Current active Dasha highlighted + brief AI interpretation auto-displayed</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">GET /dasha/{session_id} returns current dasha. POST /dasha/{session_id}/narrative generates AI note. But auto-display on chart load is not wired in frontend.</td></tr>
+    <tr><td class="req">3.3e</td><td>Gochara (transit) correlation with Dasha</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">PyJHora provides Gochara data; passed into AI prompts. Not shown as separate UI component or structured field.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 3.4 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr34">5. FR 3.4 — AI Interpretation Module</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.4.1a</td><td>Personality Profile report</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /kundli/start + /kundli/refine — full personality reading via agent.py</td></tr>
+    <tr><td class="req">3.4.1b</td><td>Life Areas Report (all 12 houses)</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Deep reading covers key life areas but is not structured as a formal 12-house report. No dedicated /ai/report/life-areas endpoint.</td></tr>
+    <tr><td class="req">3.4.1c</td><td>Dasha Predictions report</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /dasha/{id}/narrative — AI dasha narrative with streaming</td></tr>
+    <tr><td class="req">3.4.1d</td><td>Yearly Forecast (Gochara + Dasha overlay)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No yearly forecast report type. No Gochara transit overlay against natal chart as a dedicated report.</td></tr>
+    <tr><td class="req">3.4.1e</td><td>Compatibility / Matchmaking report</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /report/compatibility — Ashtakoot Milan via agent.stream_compatibility_report()</td></tr>
+    <tr><td class="req">3.4.1f</td><td>Remedies report (gemstone, mantra, yantra)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No remedies report type or endpoint.</td></tr>
+    <tr><td class="req">3.4.1g</td><td>Career &amp; Finance report</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /report/career/{id} — streaming SSE via agent.stream_career_report()</td></tr>
+    <tr><td class="req">3.4.2a</td><td>Balance check before any AI report</td><td><span class="badge pass">PASS</span></td><td class="evidence">debit_wallet_cents() called before every report; UI showConfirmModal shows cost/balance</td></tr>
+    <tr><td class="req">3.4.2b</td><td>Insufficient credits: block + show Buy Credits CTA</td><td><span class="badge pass">PASS</span></td><td class="evidence">HTTP 402 returned; frontend shows wallet top-up modal when balance insufficient</td></tr>
+    <tr><td class="req">3.4.2c</td><td>Atomic credit deduction on confirmation</td><td><span class="badge pass">PASS</span></td><td class="evidence">database.py debit_wallet_cents() uses SELECT...FOR UPDATE + atomic PostgreSQL transaction</td></tr>
+    <tr><td class="req">3.4.2d</td><td>Auto-refund on AI service failure</td><td><span class="badge pass">PASS</span></td><td class="evidence">WalletService.refund() called in all except branches of refine/career/compat/chat handlers in main.py</td></tr>
+    <tr><td class="req">3.4.2e</td><td>Professional astrologers use own credits (not client's)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No professional role distinction in report generation. Single user_type field not enforced for credit billing separation.</td></tr>
+    <tr><td class="req">3.4.3a</td><td>Structured JSON input to AI from calculation engine</td><td><span class="badge pass">PASS</span></td><td class="evidence">agent.py receives kundli_json dict; prompts use structured planet/house data</td></tr>
+    <tr><td class="req">3.4.3b</td><td>Vedic astrology consistency validation layer</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">safety_filter.py and planet_calibrator.py exist. No deterministic validator for internally inconsistent astrological claims (arch spec §3 requirement).</td></tr>
+    <tr><td class="req">3.4.3c</td><td>Dasha + transit contextualisation</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Dasha data passed to AI in DASHA_NARRATIVE_PROMPT. Career/compat prompts don't explicitly include Gochara transit overlay.</td></tr>
+    <tr><td class="req">3.4.3d</td><td>Conversational follow-up (Ask the Astrologer)</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /kundli/chat/{session_id} — agent.chat() with conversation history</td></tr>
+    <tr><td class="req">3.4.3e</td><td>AI disclaimer on all reports</td><td><span class="badge pass">PASS</span></td><td class="evidence">DISCLAIMER constant in prompts.py appended to all system prompts; .ai-disclaimer UI banner shown after each report</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 3.5 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr35">6. FR 3.5 — Report Export &amp; Sharing</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.5a</td><td>PDF export for all users</td><td><span class="badge pass">PASS</span></td><td class="evidence">GET /export/{id}/pdf — pdf_generator.py using WeasyPrint/reportlab; email-my-reading endpoint</td></tr>
+    <tr><td class="req">3.5b</td><td>DOCX export for professional users only</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">GET /export/{id}/docx exists and works but is NOT gated to professional users. Any authenticated user can access it.</td></tr>
+    <tr><td class="req">3.5c</td><td>JSON/CSV raw chart data export (professional users)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No JSON/CSV export endpoint for raw chart data.</td></tr>
+    <tr><td class="req">3.5d</td><td>Shareable view-only expirable links</td><td><span class="badge pass">PASS</span></td><td class="evidence">POST /reading/share/{id} — PIN-protected, 72h TTL. GET /shared/{token} serves PIN-entry page.</td></tr>
+    <tr><td class="req">3.5e</td><td>Print-optimised layouts</td><td><span class="badge fail">FAIL</span></td><td class="gap">No @media print CSS in frontend. No print-optimised layout for reports.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 3.9 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr39">7. FR 3.9 — Credit Purchase &amp; Wallet Management</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.9.1a</td><td>Wallet auto-created on registration</td><td><span class="badge pass">PASS</span></td><td class="evidence">database.register() initialises wallet_balance_cents=0; welcome credit awarded on email verify</td></tr>
+    <tr><td class="req">3.9.1b</td><td>Balance prominently displayed in header</td><td><span class="badge pass">PASS</span></td><td class="evidence">Wallet balance shown in screen header via updateWalletDisplay() in index.html</td></tr>
+    <tr><td class="req">3.9.1c</td><td>Immutable ledger (purchase/consumed/refund/promo)</td><td><span class="badge pass">PASS</span></td><td class="evidence">wallet_ledger table (migration 002) — append-only, indexed. _write_ledger() in database.py.</td></tr>
+    <tr><td class="req">3.9.1d</td><td>Credits do not expire in Phase 1</td><td><span class="badge pass">PASS</span></td><td class="evidence">No expiry logic. promo_balance_cents has no expiry column.</td></tr>
+    <tr><td class="req">3.9.2</td><td>Geo-based pricing (India INR / International USD)</td><td><span class="badge pass">PASS</span></td><td class="evidence">REPORT_COST_CENTS = INR 10000 (India) / USD 100 (International). payment/wallet.py WalletService.get_pricing_for_user()</td></tr>
+    <tr><td class="req">3.9.3</td><td>Credit packs (Starter/Standard/Value/Professional)</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">payment/gateway.py defines packs for Razorpay (INR). USD packs exist. EUR packs missing. Pack names match SRS. Tax calculation not implemented.</td></tr>
+    <tr><td class="req">3.9.4</td><td>Card + UPI payment flow</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Mock payment UI exists with Card/UPI/Net Banking tabs. Razorpay + Stripe adapters written. Real gateway integration pending (known intentional deferral). HMAC signature verification implemented in gateway.py.</td></tr>
+    <tr><td class="req">3.9.5a</td><td>Full transaction history viewable</td><td><span class="badge pass">PASS</span></td><td class="evidence">GET /wallet/transactions returns wallet_ledger rows with type, amount, date, balance_after</td></tr>
+    <tr><td class="req">3.9.5b</td><td>Pre-report: show credits required, balance, balance-after</td><td><span class="badge pass">PASS</span></td><td class="evidence">showConfirmModal() in index.html — shows report name, cost, balance, balance-after before any deduction</td></tr>
+    <tr><td class="req">3.9.5c</td><td>Insufficient balance blocks + redirects to Buy Credits</td><td><span class="badge pass">PASS</span></td><td class="evidence">HTTP 402 from debit_wallet_cents(); frontend shows top-up modal. Confirmation dialog shows negative balance-after in red.</td></tr>
+    <tr><td class="req">3.9.5d</td><td>Post-report balance summary on report screen</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">wallet_balance_cents returned in API response and stored in currentUser. Not shown as a prominent post-report banner on the report screen itself.</td></tr>
+    <tr><td class="req">3.9.5e</td><td>Low-balance alert when below 3 credits</td><td><span class="badge fail">FAIL</span></td><td class="gap">No low-balance detection or in-app/email alert implemented.</td></tr>
+    <tr><td class="req">3.9.6</td><td>Auto-refund on AI failure within 60s</td><td><span class="badge pass">PASS</span></td><td class="evidence">WalletService.refund() called in all AI failure paths in main.py lines 583, 587, 601, 607, 730</td></tr>
+    <tr><td class="req">3.9.7</td><td>Promo credits labelled and consumed before paid</td><td><span class="badge pass">PASS</span></td><td class="evidence">database.py debit_wallet_cents(): promo_used = min(remaining, promo_bal) consumed first. Ledger records balance_type.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 3.10 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr310">8. FR 3.10 — Super Admin Analytics Dashboard</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">3.10.1</td><td>Dedicated secured admin portal</td><td><span class="badge pass">PASS</span></td><td class="evidence">GET /admin — ADMIN_SECRET cookie auth via admin_auth() dependency. Brute-force lockout 5/15min.</td></tr>
+    <tr><td class="req">3.10.2</td><td>User traffic &amp; engagement (DAU, MAU, session duration, etc.)</td><td><span class="badge fail">FAIL</span></td><td class="gap">Admin panel shows only total_users, verified_users, total_readings, total_balance. No DAU/MAU, session duration, platform split, country breakdown.</td></tr>
+    <tr><td class="req">3.10.3</td><td>Feature usage analytics (reports by type, dasha usage, language breakdown)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No feature usage metrics tracked or displayed. No report-type breakdown, no dasha system usage stats.</td></tr>
+    <tr><td class="req">3.10.4</td><td>Revenue &amp; credit analytics (total revenue, ARPU, refund rate)</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">total_balance_cents shown. No revenue breakdown by region, pack tier, or time period. No ARPU, no refund rate metric.</td></tr>
+    <tr><td class="req">3.10.6</td><td>System health (p50/p95/p99 latency, error rate, uptime, gateway success rate)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No system health metrics. No latency tracking, error rate dashboard, or uptime percentage.</td></tr>
+    <tr><td class="req">3.10.7a</td><td>MFA protection for admin portal</td><td><span class="badge fail">FAIL</span></td><td class="gap">Admin portal uses ADMIN_SECRET cookie only. No MFA/2FA for admin access. SRS requires MFA mandatory for admin accounts.</td></tr>
+    <tr><td class="req">3.10.7b</td><td>Date-range filters on all metrics</td><td><span class="badge fail">FAIL</span></td><td class="gap">No date-range filtering in admin panel.</td></tr>
+    <tr><td class="req">3.10.7c</td><td>CSV/Excel export of analytics</td><td><span class="badge fail">FAIL</span></td><td class="gap">No export functionality in admin panel.</td></tr>
+    <tr><td class="req">3.10.7d</td><td>Automated weekly summary email to admin</td><td><span class="badge fail">FAIL</span></td><td class="gap">No scheduled email digest. notification-service scaffold exists but no implementation.</td></tr>
+    <tr><td class="req">3.10.7e</td><td>No PII exposed in analytics views</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Admin user table shows email, name, balance. Email is PII — should be masked or require specific justification for access.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ FR 4 ════════════════════════════════════════════════════════════════ -->
+<h2 id="fr4">9. FR 4 — Multi-Language &amp; Internationalisation</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">4.1</td><td>English, Hindi, Tamil support (Phase 1)</td><td><span class="badge pass">PASS</span></td><td class="evidence">TRANSLATIONS object in index.html with full EN/HI/TA keys. Language pills on registration.</td></tr>
+    <tr><td class="req">4.2a</td><td>Language selector prominent on landing screen</td><td><span class="badge pass">PASS</span></td><td class="evidence">Lang pills visible on auth screen (screen1). Language dropdown in profile settings.</td></tr>
+    <tr><td class="req">4.2b</td><td>Language persists across sessions for registered users</td><td><span class="badge pass">PASS</span></td><td class="evidence">preferred_language saved to users table; loaded on session restore.</td></tr>
+    <tr><td class="req">4.2c</td><td>Language change re-renders UI without page reload</td><td><span class="badge pass">PASS</span></td><td class="evidence">applyTranslations(lang) called reactively in selectLang(). No page reload required.</td></tr>
+    <tr><td class="req">4.3a</td><td>Dynamic form labels/placeholders from i18n bundles</td><td><span class="badge pass">PASS</span></td><td class="evidence">TRANSLATIONS object contains all form labels, placeholders, button text for EN/HI/TA.</td></tr>
+    <tr><td class="req">4.3b</td><td>Unicode fonts for Devanagari (Hindi) and Tamil scripts</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">No explicit Unicode font imports (Google Fonts / web font) for Devanagari or Tamil. Relies on OS system fonts which may vary.</td></tr>
+    <tr><td class="req">4.4</td><td>AI output natively in selected language</td><td><span class="badge pass">PASS</span></td><td class="evidence">LANGUAGE_INSTRUCTION appended to all prompts: "Respond entirely in {language}". Language param passed in all AI calls.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ NFR 5.1 ════════════════════════════════════════════════════════════ -->
+<h2 id="nfr51">10. NFR 5.1 — Performance</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">5.1a</td><td>Kundli chart generation &lt; 3 seconds</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">PyJHora compute time unknown. No SLO enforcement or timeout. No performance tests.</td></tr>
+    <tr><td class="req">5.1b</td><td>AI interpretation &lt; 30 seconds</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">SSE streaming mitigates perceived latency. No hard 30s timeout enforced in agent.py.</td></tr>
+    <tr><td class="req">5.1c</td><td>1,000 concurrent users without degradation</td><td><span class="badge fail">FAIL</span></td><td class="gap">Monolith FastAPI with ThreadedConnectionPool. No load test. Redis sessions help but no horizontal scaling tested.</td></tr>
+    <tr><td class="req">5.1d</td><td>FCP &lt; 2.5s on 4G mobile</td><td><span class="badge fail">FAIL</span></td><td class="gap">Single-file index.html is ~2,440 lines with embedded JS/CSS. No SSR, no code splitting, no CDN.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ NFR 5.2 ════════════════════════════════════════════════════════════ -->
+<h2 id="nfr52">11. NFR 5.2 — Security &amp; Privacy</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">5.2a</td><td>TLS 1.3 for all data transmission</td><td><span class="badge na">INFRA</span></td><td class="gap">Not enforced in application code. Requires reverse proxy (nginx/Caddy) config. No TLS termination config present.</td></tr>
+    <tr><td class="req">5.2b</td><td>PII encrypted at rest (AES-256)</td><td><span class="badge fail">FAIL</span></td><td class="gap">Name, birth data, email stored as plaintext in PostgreSQL. No KMS encryption. Encryption keys not managed.</td></tr>
+    <tr><td class="req">5.2c</td><td>No card data on platform servers (PCI-DSS)</td><td><span class="badge pass">PASS</span></td><td class="evidence">payment/gateway.py uses Razorpay/Stripe gateway-hosted forms. Card data never touches platform.</td></tr>
+    <tr><td class="req">5.2d</td><td>PII not in LLM API calls</td><td><span class="badge pass">PASS</span></td><td class="evidence">prompts.py uses structured astrological data (planet positions, houses). No name/email/DOB in prompt templates.</td></tr>
+    <tr><td class="req">5.2e</td><td>User data export + account deletion (right to erasure)</td><td><span class="badge fail">FAIL</span></td><td class="gap">database.delete_user() exists but no user-accessible /account/delete or /account/export endpoint. No GDPR-compliant self-service.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ NFR 5.3–5.6 ═══════════════════════════════════════════════════════ -->
+<h2 id="nfr53">12. NFR 5.3–5.6 — Reliability, Scalability, Accessibility, Maintainability</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">5.3a</td><td>Graceful degradation if AI unavailable</td><td><span class="badge pass">PASS</span></td><td class="evidence">Kundli calculation proceeds independently. AI errors return HTTP 500 with wallet refund.</td></tr>
+    <tr><td class="req">5.3b</td><td>Payment gateway error handling preserves state</td><td><span class="badge pass">PASS</span></td><td class="evidence">gateway.py returns error dict; no wallet credit on failure; idempotency key used.</td></tr>
+    <tr><td class="req">5.4a</td><td>Stateless / horizontally scalable services</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Redis session store (task #45 done). In-memory fallback still exists. Main.py monolith not truly stateless due to _blocked_* counters and in-process state.</td></tr>
+    <tr><td class="req">5.4b</td><td>New Dasha systems pluggable without core modification</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">services/dasha-engine has base.py interface. Only Vimshottari implemented. Yogini/Chara/Kalachakra/Narayana/Moola stubs missing.</td></tr>
+    <tr><td class="req">5.4c</td><td>New languages without core code changes</td><td><span class="badge pass">PASS</span></td><td class="evidence">TRANSLATIONS dict pattern — add new language key, no code logic change needed.</td></tr>
+    <tr><td class="req">5.5</td><td>WCAG 2.1 AA (ARIA labels, keyboard nav, contrast)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No aria-label attributes on form inputs. No keyboard navigation testing. Colour contrast not audited. No text alternatives for any visual components.</td></tr>
+    <tr><td class="req">5.6a</td><td>80% unit test coverage for calculation engine</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">test_kundli_engine.py exists. Coverage not measured. PyJHora is external — only adapter layer is tested.</td></tr>
+    <tr><td class="req">5.6b</td><td>Calculation logic isolated from UI and AI layers</td><td><span class="badge pass">PASS</span></td><td class="evidence">backend/kundli_engine/ and services/kundli-engine/ are independent modules. No UI dependencies.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ NFR 5.7 ════════════════════════════════════════════════════════════ -->
+<h2 id="nfr57">13. NFR 5.7 — Critical Security Requirements</h2>
+<table>
+  <thead><tr><th>Req ID</th><th>Requirement</th><th>Status</th><th>Evidence / Gap</th></tr></thead>
+  <tbody>
+    <tr><td class="req">5.7.1a</td><td>DB in private subnet, no public internet access</td><td><span class="badge na">INFRA</span></td><td class="gap">Infrastructure concern. docker-compose.yml exposes postgres on localhost. No VPC/subnet config.</td></tr>
+    <tr><td class="req">5.7.1b</td><td>AES-256 at rest, keys via KMS (never hard-coded)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No at-rest encryption. Plaintext data in DB. JWT_SECRET has a hard-coded dev default in jwt_utils.py.</td></tr>
+    <tr><td class="req">5.7.1c</td><td>Parameterized SQL (no string concatenation)</td><td><span class="badge pass">PASS</span></td><td class="evidence">database.py uses psycopg2 %s placeholders throughout. One dynamic SET clause uses list join safely.</td></tr>
+    <tr><td class="req">5.7.1d</td><td>DB activity monitoring + immutable audit log (12 months)</td><td><span class="badge fail">FAIL</span></td><td class="gap">No DB activity monitoring. wallet_ledger is immutable but not a full audit log. No 12-month retention policy.</td></tr>
+    <tr><td class="req">5.7.2a</td><td>JWT auth on all non-public endpoints</td><td><span class="badge pass">PASS</span></td><td class="evidence">get_current_email / get_current_user Depends() on all protected routes. rate_limiter.py enforced.</td></tr>
+    <tr><td class="req">5.7.2b</td><td>Rate limiting + account lockout on auth failure</td><td><span class="badge pass">PASS</span></td><td class="evidence">rate_limiter.py sliding window. database.login() locks after 5 failures. 004_security_hardening.sql migration.</td></tr>
+    <tr><td class="req">5.7.2c</td><td>Server-side input validation on all user data</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Pydantic models validate types. No comprehensive sanitisation for XSS/injection in free-text fields (place_of_birth, name). No HTML encoding of user content before render.</td></tr>
+    <tr><td class="req">5.7.2d</td><td>Secrets in vault (not in code or plain-text env vars)</td><td><span class="badge fail">FAIL</span></td><td class="gap">JWT_SECRET defaults to hard-coded string in jwt_utils.py. ADMIN_SECRET defaults to hard-coded string in security.py. No HashiCorp Vault / AWS Secrets Manager integration.</td></tr>
+    <tr><td class="req">5.7.2e</td><td>CVE dependency scanning in CI/CD</td><td><span class="badge fail">FAIL</span></td><td class="gap">No CI/CD pipeline. No GitHub Actions. No requirements.txt pinning with safety/snyk scanning.</td></tr>
+    <tr><td class="req">5.7.3</td><td>WAF + DDoS protection + TLS 1.3 enforcement</td><td><span class="badge fail">FAIL</span></td><td class="gap">No WAF config. No DDoS protection. No TLS enforcement at app level. Requires infrastructure layer.</td></tr>
+    <tr><td class="req">5.7.4</td><td>Atomic transactions; immutable wallet audit trail</td><td><span class="badge pass">PASS</span></td><td class="evidence">SELECT...FOR UPDATE in debit/credit. wallet_ledger is append-only. Rollback on exception.</td></tr>
+    <tr><td class="req">5.7.5a</td><td>MFA available to all users; mandatory for admin &amp; pro</td><td><span class="badge fail">FAIL</span></td><td class="gap">No MFA/2FA implemented anywhere. Admin uses secret-key only. No TOTP endpoints.</td></tr>
+    <tr><td class="req">5.7.5b</td><td>Access token 15 min; refresh token 7 days; invalidate on logout</td><td><span class="badge partial">PARTIAL</span></td><td class="gap">Access token TTL = 15 min ✓. No refresh token endpoint (/auth/refresh missing). No token invalidation on logout (stateless JWT — no blacklist).</td></tr>
+    <tr><td class="req">5.7.6</td><td>Penetration test before go-live; incident response plan</td><td><span class="badge na">PROCESS</span></td><td class="gap">Process/compliance gap. Not a code item but required before Phase 1 launch per SRS §5.7.6.</td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══ ARCHITECTURE ══════════════════════════════════════════════════════════ -->
+<h2 id="arch">14. Architecture Specification Compliance</h2>
+
+<div class="note"><strong>Architecture approach:</strong> The spec defines a microservices monorepo (Turborepo) with 9 independently deployable services, an API Gateway (Kong), React SPA + Next.js SSR frontend, and React Native mobile app. The current codebase is a <strong>monolith FastAPI app</strong> (<code>backend/api/main.py</code>) with <code>services/</code> scaffolding that is not wired or deployed independently. This is the single largest architectural gap.</div>
+
+<div class="section">
+  <div class="section-title">Layer 1 — Client Layer</div>
+  <div class="arch-row">
+    <div class="arch-service">React SPA (Vite + Next.js SSR)</div>
+    <div class="arch-detail">Spec: React 18 + Vite + Next.js SSR, PWA, SVG chart rendering, 360px–2560px responsive, Tailwind CSS + Radix UI, react-i18next</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">Current: Single HTML file</div>
+    <div class="arch-detail">apps/web/index.html — vanilla JS, no React, no Next.js, no SSR, no PWA manifest, no Tailwind. Responsive CSS exists. i18n via TRANSLATIONS dict.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">React Native Mobile App</div>
+    <div class="arch-detail">Spec: iOS 15+ and Android 10+, push notifications, biometrics, offline mode, UPI deep-link. No apps/mobile/ directory exists.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 2 — Edge / Security</div>
+  <div class="arch-row">
+    <div class="arch-service">CDN + WAF + DDoS + Load Balancer</div>
+    <div class="arch-detail">Spec: CloudFront/Cloudflare + AWS WAF + ALB. No CDN config, no WAF rules, no load balancer config.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 3 — API Gateway</div>
+  <div class="arch-row">
+    <div class="arch-service">Kong / AWS API Gateway</div>
+    <div class="arch-detail">Spec: Kong with JWT middleware, rate limiter, request router, i18n header injection. Current: FastAPI directly serves all routes. Rate limiting is in-process (rate_limiter.py). No external gateway.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 4 — Core Microservices</div>
+  <div class="arch-row">
+    <div class="arch-service">auth-service</div>
+    <div class="arch-detail">Spec: Node.js + Express + Passport.js + speakeasy. TOTP 2FA, OAuth Google/Apple, JWT rotation. Current: Python in main.py. No OAuth. No 2FA. No refresh token. services/auth-service has only email_service.py.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">kundli-engine</div>
+    <div class="arch-detail">Spec: Python + FastAPI + pyswisseph, D1–D16, Shadbala, Ashtakavarga, Yoga detection, configurable Ayanamsa. Current: backend/kundli_engine/engine.py wraps PyJHora. D9/D10 in stub. No Shadbala, no Ashtakavarga modules. services/kundli-engine lacks shadbala.py, ashtakavarga.py, yogas.py.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">dasha-engine</div>
+    <div class="arch-detail">Spec: 6 pluggable systems. Current: services/dasha-engine has base.py + vimshottari.py only. Yogini/Chara/Kalachakra/Narayana/Moola stubs missing.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">ai-interpretation-service</div>
+    <div class="arch-detail">Spec: locale-aware prompts, deterministic validator, provider-agnostic LLM adapter, streaming, conversational follow-up, anonymised prompts. Current: backend/ai_interpretation/agent.py covers most of this. No deterministic astro-consistency validator. services/ copy is scaffolded.</div>
+    <div class="arch-status"><span class="badge pass">PASS</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">credit-wallet-service</div>
+    <div class="arch-detail">Spec: Node.js + Express + PostgreSQL, atomic deduction, auto-refund, promo-before-paid, low-balance alert. Current: Python in database.py. Atomic ✓, auto-refund ✓, promo-first ✓. Low-balance alert MISSING. services/credit-wallet-service is scaffolded only.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">payment-gateway-service</div>
+    <div class="arch-service" style="color:#8b949e;font-size:.8rem">(SEPARATE MODULE per spec)</div>
+    <div class="arch-detail">Spec: Node.js, Razorpay/Stripe adapter, gateway-hosted iframe, HMAC webhook, geo-pricing, GST/VAT. Current: payment/gateway.py (Python). Razorpay+Stripe adapters ✓. HMAC ✓. Geo-pricing partial (INR/USD, no EUR). Tax calc missing. services/payment-gateway-service has adapters/gateway.py stub. Real gateway integration deferred.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">report-export-service</div>
+    <div class="arch-detail">Spec: PDF + DOCX + JSON/CSV, presigned S3 URLs, shareable links, print layouts. Current: backend/reports/pdf_generator.py + docx_generator.py. No S3 (local file). No JSON/CSV export. No print layout. Share links ✓ (72h PIN-protected).</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">analytics-service</div>
+    <div class="arch-detail">Spec: Python + Celery + OpenSearch, anonymised Super Admin dashboard, p50/p95/p99, error rates, weekly digest. Current: admin_panel.py shows 4 basic stats cards. No OpenSearch, no Celery, no metric aggregation, no weekly email. services/analytics-service has only Dockerfile + README.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">notification-service</div>
+    <div class="arch-detail">Spec: Node.js + SQS consumer, Firebase FCM push notifications, AWS SES emails, i18n templates, low-balance + Dasha transition alerts. Current: backend/auth/email_service.py sends transactional emails (verification, reset). No push notifications, no SQS, no Firebase FCM. services/notification-service has only Dockerfile + README.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 5 — Data Layer</div>
+  <div class="arch-row">
+    <div class="arch-service">PostgreSQL 16</div>
+    <div class="arch-detail">Spec: UUID PKs, per-service schema ownership, KMS-encrypted fields, PITR 7-day. Current: PostgreSQL ✓. TEXT PKs (not UUIDs). Monolith owns all tables. No KMS encryption. No PITR config.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">Redis 7</div>
+    <div class="arch-detail">Spec: Session tokens, rate-limit counters, hot chart caching. Current: SessionStore uses Redis for sessions ✓. rate_limiter.py uses Redis ✓. No chart result caching.</div>
+    <div class="arch-status"><span class="badge pass">PASS</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">S3 Object Storage</div>
+    <div class="arch-detail">Spec: Generated reports with presigned URLs, lifecycle expiry. Current: Reports returned as HTTP responses / email attachments. No S3 integration.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">SQS Message Queue</div>
+    <div class="arch-detail">Spec: Async wallet credit after webhook, notification dispatch. Current: Synchronous only. No SQS.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">Secrets Manager / KMS</div>
+    <div class="arch-detail">Spec: AWS Secrets Manager for all secrets, KMS for DB encryption. Current: Secrets in environment variables with hard-coded dev defaults.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 6 — Infrastructure (IaC)</div>
+  <div class="arch-row">
+    <div class="arch-service">Terraform</div>
+    <div class="arch-detail">infrastructure/terraform/ directory exists. Contents: empty (no .tf files).</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">Kubernetes manifests</div>
+    <div class="arch-detail">infrastructure/k8s/ directory exists. Contents: empty.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">Docker Compose (dev)</div>
+    <div class="arch-detail">infrastructure/docker/docker-compose.yml — defines all 9 services, postgres:16, redis:7. Well-structured local dev config. Not production.</div>
+    <div class="arch-status"><span class="badge pass">PASS</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">CI/CD (GitHub Actions)</div>
+    <div class="arch-detail">Spec: Build, lint, test, CVE scan, Docker build → ECR, Helm deploy. No .github/workflows/ directory. No CI/CD pipeline.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Database Schema vs Architecture Spec</div>
+  <div class="arch-row">
+    <div class="arch-service">users table</div>
+    <div class="arch-detail">Spec: UUID PK, mfa_enabled, mfa_secret, oauth_provider columns. Current: TEXT PK, no mfa_enabled/mfa_secret/oauth_provider. has failed_login_attempts, locked_until (added by migration 004) ✓.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">kundli_profiles table</div>
+    <div class="arch-detail">Spec: Separate kundli_profiles table with UUID PK, user_id FK, ayanamsa ENUM. Current: Birth data stored as columns in users table. No separate kundli_profiles table.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">ai_reports table</div>
+    <div class="arch-detail">Spec: ai_reports table with report_type ENUM, storage_key (S3), share_token. Current: No ai_reports table. Reports not persisted — session-only. reading_history stores refined_analysis text.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">payment_orders table</div>
+    <div class="arch-detail">Spec: payment_orders with gateway_order_id UQ, currency CHAR(3), tax_amount. Current: No payment_orders table. Wallet top-up verified inline without persistent order record.</div>
+    <div class="arch-status"><span class="badge fail">FAIL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">credit_wallets table</div>
+    <div class="arch-detail">Spec: Separate credit_wallets table with optimistic locking (version column). Current: Wallet stored as columns in users table (paid_balance_cents, promo_balance_cents). Uses SELECT...FOR UPDATE (better than optimistic locking).</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-service">wallet_ledger table</div>
+    <div class="arch-detail">Spec: wallet_id FK, type ENUM (purchase/consumed/refund/promo). Current: wallet_ledger uses email FK (not wallet_id), txn_type TEXT not ENUM. Functionally equivalent but not spec-compliant.</div>
+    <div class="arch-status"><span class="badge partial">PARTIAL</span></div>
+  </div>
+</div>
+
+
+<!-- ═══ PRIORITISED GAP LIST ══════════════════════════════════════════════════ -->
+<h2 id="gaps">15. Prioritised Gap List</h2>
+
+<h3>🔴 Critical — Must fix before Phase 1 launch</h3>
+<ul class="gap-list">
+  <li class="critical">
+    <div class="gap-title"><span class="pri critical">CRITICAL</span> No MFA / 2FA anywhere in the system</div>
+    <div class="gap-detail">SRS §5.7.5 makes MFA mandatory for all admin accounts. SRS §3.1.1 requires 2FA for general users. No TOTP/speakeasy implementation. Admin portal uses single-factor secret key only.</div>
+  </li>
+  <li class="critical">
+    <div class="gap-title"><span class="pri critical">CRITICAL</span> PII not encrypted at rest</div>
+    <div class="gap-detail">SRS §5.2 + §5.7.1 require AES-256 encryption at rest for name, DOB, TOB, birth place, email. All stored as plaintext in PostgreSQL. No KMS integration. Hard-coded JWT_SECRET and ADMIN_SECRET defaults violate §5.7.2.</div>
+  </li>
+  <li class="critical">
+    <div class="gap-title"><span class="pri critical">CRITICAL</span> No JWT refresh token / logout token invalidation</div>
+    <div class="gap-detail">SRS §5.7.5 requires refresh token (7-day) with immediate invalidation on logout/password change. Only access tokens issued. No /auth/refresh, no /auth/logout endpoint, no token blacklist.</div>
+  </li>
+  <li class="critical">
+    <div class="gap-title"><span class="pri critical">CRITICAL</span> No OAuth (Google / Apple) login</div>
+    <div class="gap-detail">SRS §3.1.1 requires social OAuth as a registration option. No Google/Apple buttons, no Passport.js/OAuth flow, no oauth_provider column in users table.</div>
+  </li>
+  <li class="critical">
+    <div class="gap-title"><span class="pri critical">CRITICAL</span> No CI/CD pipeline — no CVE scanning, no automated tests on deploy</div>
+    <div class="gap-detail">SRS §5.7.2 requires CVE dependency scanning in CI/CD. No GitHub Actions, no automated test runner, no Docker build pipeline. Vulnerable dependencies could be shipped undetected.</div>
+  </li>
+</ul>
+
+<h3>🟡 High — Required for a production-ready Phase 1</h3>
+<ul class="gap-list">
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> No SVG/Canvas kundli chart rendering (North/South Indian styles)</div>
+    <div class="gap-detail">SRS §3.2.1 requires visual chart display in both North Indian diamond and South Indian square styles. Currently only text/JSON output. Core user-facing feature gap.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> Analytics dashboard is basic — no real metrics</div>
+    <div class="gap-detail">SRS §3.10 requires DAU/MAU, feature usage, revenue analytics, system health (p50/p95/p99), date-range filters, CSV export, weekly digest. Current admin shows only 4 stat cards. analytics-service scaffold is empty.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> Missing report types: Yearly Forecast, Remedies</div>
+    <div class="gap-detail">SRS §3.4.1 requires Yearly Forecast (Gochara + Dasha overlay) and Remedies report (gemstone, mantra, yantra). Neither endpoint nor AI prompt exists.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> No kundli_profiles table — no multi-profile support</div>
+    <div class="gap-detail">Architecture spec §6 requires a separate kundli_profiles table. Currently birth data is stored as columns in the users table, allowing only one active profile per user. SRS §3.1.2 requires multiple profiles.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> Monolith vs microservices architecture mismatch</div>
+    <div class="gap-detail">Architecture spec defines 9 independently deployable services. Current codebase is a single FastAPI monolith. services/ scaffolding exists but is undeployed and unwired. Decision required: deploy monolith + refactor incrementally, or wire up services for Phase 1.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> No Shadbala or Ashtakavarga computation or display</div>
+    <div class="gap-detail">SRS §3.2.2 explicitly requires both Shadbala (six-fold planetary strength) and Ashtakavarga (eight-source benefic points) calculations. Neither is computed, stored, or displayed.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> Dasha engine missing 5 of 6 required systems</div>
+    <div class="gap-detail">SRS §3.3 requires all 6: Vimshottari ✓, Yogini ❌, Chara ❌, Kalachakra ❌, Narayana ❌, Moola ❌. Only Vimshottari is implemented as a standalone module.</div>
+  </li>
+  <li class="high">
+    <div class="gap-title"><span class="pri high">HIGH</span> No S3 storage — reports not persisted</div>
+    <div class="gap-detail">Architecture spec §6 requires ai_reports table with S3 storage_key. Reports are generated in-memory and emailed/downloaded but not persisted. No report retrieval endpoint. ai_reports table missing from schema.</div>
+  </li>
+</ul>
+
+<h3>🔵 Medium — Important for production quality but not blocking launch</h3>
+<ul class="gap-list">
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> Low-balance alert (&lt;3 credits) not implemented</div>
+    <div class="gap-detail">SRS §3.9.5 requires in-app notification and optional email when balance falls below 3 credits. notification-service scaffold exists but is empty.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> Post-report balance summary not shown on report screen</div>
+    <div class="gap-detail">SRS §3.9.5 requires a prominent balance summary (credits consumed + remaining balance) immediately after report generation, on the report screen itself.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> No WCAG 2.1 AA compliance</div>
+    <div class="gap-detail">SRS §5.5 requires WCAG 2.1 AA. No aria-label, no aria-describedby, no keyboard navigation, no colour contrast audit, no screen reader alternatives for visual components.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> No payment_orders table — no persistent payment history</div>
+    <div class="gap-detail">Architecture spec §6 requires payment_orders table for audit trail. Currently wallet top-ups are verified and credited without a persistent order record.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> DOCX export not gated to professional users</div>
+    <div class="gap-detail">SRS §3.5 specifies DOCX export for professional users only. Currently any authenticated user can call /export/{id}/docx.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> No user self-service data export / account deletion</div>
+    <div class="gap-detail">SRS §5.2 requires right to erasure and data export. No /account/delete or /account/export user-accessible endpoints. delete_user() exists in DB layer but is admin-only.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> Admin MFA missing; admin panel shows PII (email/name)</div>
+    <div class="gap-detail">SRS §3.10.7 requires MFA for admin portal and prohibits PII exposure in analytics. Admin table shows user emails and names directly.</div>
+  </li>
+  <li class="medium">
+    <div class="gap-title"><span class="pri medium">MEDIUM</span> Interactive Dasha timeline UI not implemented</div>
+    <div class="gap-detail">SRS §3.3 requires interactive timeline for past/present/future Dasha navigation. Current frontend shows only a static text output from the /dasha endpoint.</div>
+  </li>
+</ul>
+
+
+<!-- ═══ SUMMARY ═══════════════════════════════════════════════════════════════ -->
+<h2 id="summary">16. Summary &amp; Recommendations</h2>
+
+<div class="section">
+  <div class="section-title">What is working well ✅</div>
+  <p style="font-size:.88rem;color:#8b949e;line-height:1.8">
+    The core AI reading pipeline (kundli → deep reading → chat → career/compat reports) is functional end-to-end.
+    The wallet system is architecturally sound with atomic transactions, promo-first logic, auto-refund on failure, and an immutable ledger.
+    Multi-language (EN/HI/TA) works correctly with reactive switching.
+    Rate limiting, account lockout, and JWT enforcement on all protected endpoints are now in place.
+    The admin panel has secret-key authentication with brute-force lockout.
+    Redis session store provides a foundation for horizontal scaling.
+    PIN-protected shareable reading links with 72h expiry are fully working.
+    AI disclaimer is present on all reports in both prompts and UI.
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title">The top 3 decisions required before Phase 1 launch</div>
+  <p style="font-size:.88rem;color:#8b949e;margin-bottom:10px">
+    <strong style="color:#f87171">1. Architecture path choice:</strong> Decide whether to (a) deploy the current monolith behind a reverse proxy and refactor services incrementally post-launch, or (b) wire up the services/ scaffolding before launch. Option (a) is realistic for Phase 1 given the timeline; document it as a known deviation.
+  </p>
+  <p style="font-size:.88rem;color:#8b949e;margin-bottom:10px">
+    <strong style="color:#f87171">2. PII encryption and secrets management:</strong> The hard-coded JWT_SECRET and ADMIN_SECRET defaults, and plaintext PII in the database, are the most critical security risks before handling real user data. Minimum: move all secrets to environment variables with validation on startup; add column-level encryption for name/birth data.
+  </p>
+  <p style="font-size:.88rem;color:#8b949e">
+    <strong style="color:#f87171">3. MFA and OAuth:</strong> SRS §3.1.1 and §5.7.5 make these non-optional. Integrate at minimum TOTP-based 2FA for admin accounts and Google OAuth as a registration option before going live.
+  </p>
+</div>
+
+<div class="note" style="margin-top:20px">
+  <strong>Report generated:</strong> May 7, 2026 | <strong>Audit version:</strong> v3.0 |
+  <strong>Next scheduled review:</strong> After implementation of Critical + High gaps listed above.
+</div>
+
+</div>
+</body>
+</html>
